@@ -1,0 +1,79 @@
+name: Publish Lessons to SharePoint
+
+# Triggers on every push to main that touches a lesson file.
+#
+# What this workflow does:
+#   1. Detects which week-*/day-*.md files changed in the push
+#   2. Converts each changed file from Markdown to HTML
+#   3. Creates or updates the corresponding SharePoint page
+#   4. Publishes the page immediately (visible to all site members)
+#   5. Rebuilds the full site navigation grouped by week
+#
+# Required GitHub Secrets (Settings → Secrets and variables → Actions):
+#   AZURE_CLIENT_ID      — Azure app registration client ID
+#   AZURE_TENANT_ID      — Azure AD tenant ID
+#   AZURE_CLIENT_SECRET  — Azure app client secret
+#   SHAREPOINT_SITE_URL  — Full SharePoint site URL
+#                          e.g. https://yourorg.sharepoint.com/sites/cloud-security-mastery
+#
+# See PUBLISHING-SETUP.md for the full one-time configuration guide.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'week-*/day-*.md'   # Only runs when a lesson file changes
+
+jobs:
+  publish:
+    name: Publish to SharePoint
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Check out the full repo ────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2    # Need previous commit to detect which files changed
+
+      # ── 2. Set up Python ──────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ── 3. Install dependencies ───────────────────────────────────────────
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install markdown requests msal
+
+      # ── 4. Detect which lesson files changed ─────────────────────────────
+      - name: Find changed lesson files
+        id: changed
+        run: |
+          git diff --name-only HEAD~1 HEAD \
+            | grep '^week-.*/day-.*\.md$' \
+            > changed_files.txt || true
+
+          echo "Changed lesson files:"
+          cat changed_files.txt
+
+          echo "count=$(wc -l < changed_files.txt)" >> $GITHUB_OUTPUT
+
+      # ── 5. Publish to SharePoint ──────────────────────────────────────────
+      - name: Publish changed lessons to SharePoint
+        if: steps.changed.outputs.count != '0'
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          SHAREPOINT_SITE_URL: ${{ secrets.SHAREPOINT_SITE_URL }}
+        run: |
+          python .github/scripts/publish_to_sharepoint.py changed_files.txt
+
+      # ── 6. Skip notification if nothing changed ───────────────────────────
+      - name: No lesson files changed
+        if: steps.changed.outputs.count == '0'
+        run: |
+          echo "No lesson files changed in this push — nothing to publish."
