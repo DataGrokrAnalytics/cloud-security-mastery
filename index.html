@@ -242,6 +242,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
       <a class="day-card w2 available" id="card-day11" href="docs/day-11.html"><div class="day-card-top"><div class="day-num">Day 11</div><div class="day-title">IaC Security Scanning</div></div><div class="day-card-body"><div class="day-focus">Policy as Code, CloudFormation security, Checkov scanning, pre-deployment gates</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">IaC</span><span class="day-tag">Checkov</span></div><span class="day-status available">→ Open</span></div></a>
       <a class="day-card w2 available" id="card-day12" href="docs/day-12.html"><div class="day-card-top"><div class="day-num">Day 12</div><div class="day-title">Privileged Access Workstations</div></div><div class="day-card-body"><div class="day-focus">PAW architecture, EC2 bastion hardening, Session Manager (no SSH), audit trails</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">PAW</span><span class="day-tag">SSM</span></div><span class="day-status available">→ Open</span></div></a>
       <a class="day-card w2 available" id="card-day13" href="docs/day-13.html"><div class="day-card-top"><div class="day-num">Day 13</div><div class="day-title">JIT &amp; Cross-Account Access</div></div><div class="day-card-body"><div class="day-focus">Just-in-time access, temporary credentials, 1-hour TTL sessions, cross-account role trusts</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">JIT</span><span class="day-tag">STS</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w2 available" id="card-day14" href="docs/day-14.html"><div class="day-card-top"><div class="day-num">Day 14</div><div class="day-title">Week 2 IAM Audit Portfolio</div></div><div class="day-card-body"><div class="day-focus">Five IAM audit pillars, CIS/NIST/SOC2 framework mapping, risk rating &amp; remediation SLAs, Boto3 audit automation</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">Portfolio</span><span class="day-tag">Audit</span><span class="day-tag">Boto3</span></div><span class="day-status available">→ Open</span></div></a>
     </div>
   </div>
 
@@ -377,6 +378,13 @@ function updateProgressBar(){
     }
   });
 }
+
+// On load: activate the week requested via URL hash (e.g. index.html#week-2)
+(function(){
+  const hash = window.location.hash; // e.g. "#week-3"
+  const match = hash.match(/^#week-([1-4])$/);
+  if(match) showWeek(parseInt(match[1]));
+})();
 
 updateProgressBar();
 
