@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 6 — CSPM Operations & Remediation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#4af0c4;--accent-dim:rgba(74,240,196,.08);--amber:#f0924a;--violet:#8a7fff;--danger:#f05a5a;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)}.tag-warning{color:var(--amber)}.tag-security{color:var(--accent)}.tag-ops{color:#f0c84a}.tag-lab{color:var(--lab)}.tag-remediation{color:var(--accent)}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}.lab-pane h1 em{color:var(--lab)}
+.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+.remediation-flow{display:flex;flex-direction:column;gap:0;margin:24px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.rem-step{display:flex;align-items:flex-start;gap:16px;padding:18px 20px;border-bottom:1px solid var(--border);background:var(--surface)}
+.rem-step:last-child{border-bottom:none}
+.rem-step:nth-child(even){background:rgba(255,255,255,.01)}
+.rem-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);width:22px;flex-shrink:0;margin-top:2px}
+.rem-body{flex:1}
+.rem-title{font-size:14px;color:#e4eaf6;font-weight:500;margin-bottom:4px}
+.rem-desc{font-size:13px;color:#8a92a8;line-height:1.6}
+.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
+.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+.styled-table tr:hover td{background:rgba(255,255,255,.02)}
+.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--violet)}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+.compare-card{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.compare-card-head{padding:12px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;display:flex;align-items:center;gap:8px}
+.compare-card.ok .compare-card-head{background:rgba(74,240,196,.08);color:var(--accent)}
+.compare-card.warn .compare-card-head{background:rgba(240,90,90,.08);color:var(--danger)}
+.compare-card-body{padding:14px 16px;font-size:13px;line-height:1.65;color:#8a92a8}
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:var(--accent)}.code-block pre .hl2{color:var(--amber)}.code-block pre .comment{color:var(--muted)}
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--violet);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
+.kcheck-opt:hover:not(.disabled){border-color:var(--violet);background:rgba(138,127,255,.05);color:var(--text)}
+.kcheck-opt.correct{border-color:var(--accent);background:rgba(74,240,196,.07);color:var(--accent)}
+.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.07);color:var(--danger)}
+.kcheck-opt.reveal-correct{border-color:var(--accent);background:rgba(74,240,196,.04);color:#6e9e90}
+.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
+.kcheck-opt.correct .opt-key{background:var(--accent);color:var(--bg)}.kcheck-opt.wrong .opt-key{background:var(--danger);color:#fff}.kcheck-opt.reveal-correct .opt-key{background:rgba(74,240,196,.2);color:var(--accent)}
+.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
+.kcheck-feedback.show{display:block}.kcheck-feedback.good{background:rgba(74,240,196,.08);border:1px solid rgba(74,240,196,.2);color:#7eceb8}.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border)}.lab-step:last-child{border-bottom:none}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all .3s;position:relative;z-index:1}
+.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}.lab-step:last-child .step-connector{display:none}
+.step-content{flex:1;padding-top:4px}
+.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
+.step-body{font-size:14px;color:var(--text);line-height:1.7}
+.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}.step-body li{color:#a0a8bc}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
+.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
+.check-item:hover{border-color:var(--border-hi)}.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
+.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
+.next-btn{background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px;text-decoration:none}
+.next-btn:hover{opacity:.88}.next-btn.lab-btn{background:var(--lab)}
+.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center}
+.prev-btn:hover{color:var(--text);border-color:var(--text)}.prev-btn:disabled{opacity:.3;cursor:default}
+.completion-card{text-align:center;padding:56px 32px}
+.completion-icon{font-size:48px;margin-bottom:20px;display:block}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
+.completion-card p{color:var(--muted);max-width:420px;margin:0 auto 28px;font-size:14px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(74,240,196,.1);border:1px solid rgba(74,240,196,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.compare-grid{grid-template-columns:1fr}.lesson-topbar{padding:14px 24px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 1 · Day 6</div>
+    <h2>CSPM Operations<br>&amp; Remediation</h2>
+    <div class="sidebar-meta"><span class="chip">Intermediate</span><span class="chip">4 lessons</span><span class="chip">1 lab</span><span class="chip">~4h</span></div>
+  </div>
+  <div class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">CSPM Ops: Dashboard to Fix</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(1)"><span class="nav-num">02</span><span class="nav-label">Remediation Workflows</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(2)"><span class="nav-num">03</span><span class="nav-label">KMS Key Rotation</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(3)"><span class="nav-num">04</span><span class="nav-label">Multi-Cloud Policy Translation</span><span class="nav-check">✓</span></div>
+    <div class="nav-group-label" style="margin-top:8px">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)"><span class="nav-num" style="color:var(--lab)">🔬</span><span class="nav-label">Hands-on: Fix Config Findings</span><span class="nav-check">✓</span></div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+<div class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Day 6 &nbsp;/&nbsp; <span id="topbar-title">CSPM Ops: Dashboard to Fix</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- LESSON 1 -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-ops">Operations</div>
+    <h1>CSPM Ops:<br><em>Dashboard to Fix</em></h1>
+    <p><strong>Objective:</strong> Learn the systematic workflow for turning Config and Security Hub findings into remediated controls — not just reading dashboards.</p>
+    <p>Having Config and Security Hub running is table stakes. The differentiating skill is operating them — moving from "I see findings" to "findings are fixed, documented, and tracked." This is what a Cloud Security Engineer actually does day-to-day.</p>
+    <div class="remediation-flow">
+      <div class="rem-step">
+        <span class="rem-num">01</span>
+        <div class="rem-body"><div class="rem-title">Triage by severity</div><div class="rem-desc">Open Security Hub → filter CRITICAL first. Don't start with the 200 LOW findings — fix the 3 CRITICAL ones.</div></div>
+      </div>
+      <div class="rem-step">
+        <span class="rem-num">02</span>
+        <div class="rem-body"><div class="rem-title">Assess business context</div><div class="rem-desc">Is this a real misconfiguration or an intentional exception? Don't fix without understanding the context — you might break something intentional.</div></div>
+      </div>
+      <div class="rem-step">
+        <span class="rem-num">03</span>
+        <div class="rem-body"><div class="rem-title">Remediate or suppress</div><div class="rem-desc">If it's a real issue: fix the resource directly. If it's an intentional exception: SUPPRESS with documented justification.</div></div>
+      </div>
+      <div class="rem-step">
+        <span class="rem-num">04</span>
+        <div class="rem-body"><div class="rem-title">Verify resolution</div><div class="rem-desc">Config re-evaluates within minutes. Security Hub reflects changes within 12–24 hours. Confirm the finding moved to RESOLVED or SUPPRESSED.</div></div>
+      </div>
+      <div class="rem-step" style="border-bottom:none">
+        <span class="rem-num">05</span>
+        <div class="rem-body"><div class="rem-title">Track score improvement</div><div class="rem-desc">Screenshot your CIS score before and after each remediation sprint. The improvement trajectory is your portfolio story.</div></div>
+      </div>
+    </div>
+    <div class="callout tip"><div class="callout-title">✓ The 1% Rule</div>Improving CIS from 60% to 80% in a week is impressive. The path is: fix 2–3 HIGH findings per day, suppress the exceptions with justification, verify, and track. Small consistent actions compound quickly.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">You open Config and see 180 non-compliant findings. Your manager wants the compliance score improved this week. What's the right first action?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">A</span>Work through all 180 findings in order — systematic coverage</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">B</span>Disable the rules generating the most findings to clear the dashboard</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)"><span class="opt-key">C</span>Filter by CRITICAL → assess business context → fix or suppress with justification — severity-first, context-aware</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">D</span>Focus on LOW findings — there are more of them and each one improves the score</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" disabled>← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 2 -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-remediation">Remediation</div>
+    <h1>Remediation<br><em>Workflows</em></h1>
+    <p><strong>Objective:</strong> Understand the three remediation patterns — manual, semi-automated, and fully automated — and when to use each.</p>
+    <div class="compare-grid">
+      <div class="compare-card ok">
+        <div class="compare-card-head"><span>✓</span> Manual Remediation</div>
+        <div class="compare-card-body">Open the console, fix the setting, verify. Right for: one-off misconfigurations, complex resources requiring human judgment, sensitive changes in production.<br><br><em style="color:var(--muted)">Example: enabling CloudTrail in a specific region.</em></div>
+      </div>
+      <div class="compare-card ok">
+        <div class="compare-card-head"><span>⚡</span> Config Auto-Remediation</div>
+        <div class="compare-card-body">Config rule triggers an SSM Automation document when a finding fires. AWS provides managed automation for 100+ rules. Right for: clear-cut misconfigs with no false positives.<br><br><em style="color:var(--muted)">Example: auto-enable S3 bucket encryption when found unencrypted.</em></div>
+      </div>
+    </div>
+    <div class="compare-grid">
+      <div class="compare-card warn" style="grid-column:1/-1">
+        <div class="compare-card-head"><span>⚠</span> Auto-Remediation Risk</div>
+        <div class="compare-card-body">Never enable auto-remediation for findings with high false-positive rates. If a rule fires incorrectly and auto-remediation runs, it can modify production resources unexpectedly. Always test in non-prod first and review the SSM automation document before enabling.<br><br>Safe pattern: auto-remediate in dev, notify-only in prod until you've validated zero false positives over 30 days.</div>
+      </div>
+    </div>
+    <div class="callout insight"><div class="callout-title">💡 Security Hub Insights for Batch Remediation</div>Security Hub Insights group similar findings together. "Top S3 buckets with non-compliant settings" lets you fix 10 buckets in one workflow instead of clicking through each individual finding.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A Config rule fires on 15 EC2 instances for a missing tag. The rule has a 20% false-positive rate. Should you enable auto-remediation?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">A</span>Yes — auto-remediation is always the most efficient approach</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">B</span>Yes — 80% accuracy is good enough for EC2 tag management</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)"><span class="opt-key">C</span>No — a 20% false-positive rate means auto-remediation would incorrectly modify 3 of 15 instances; manual review first</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">D</span>Only if the instances are in development — production auto-remediation is never appropriate</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 3 -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-security">Data Protection</div>
+    <h1>KMS Key<br><em>Rotation</em></h1>
+    <p><strong>Objective:</strong> Understand what KMS key rotation does, why annual rotation is a CIS requirement, and how to enable it.</p>
+    <p>AWS Key Management Service (KMS) manages cryptographic keys used to encrypt data at rest. Customer-managed keys (CMKs) need annual rotation — this is CIS AWS Foundations Benchmark control 3.7 and a SOC2 CC criterion requirement.</p>
+    <table class="styled-table">
+      <thead><tr><th>Key type</th><th>Rotation support</th><th>Rotation interval</th></tr></thead>
+      <tbody>
+        <tr><td>AWS managed keys</td><td>✅ Automatic</td><td>Every 3 years (AWS handles it)</td></tr>
+        <tr><td>Customer managed keys (CMK)</td><td>✅ Enable manually</td><td>Annually — you must enable it</td></tr>
+        <tr><td>External key material</td><td>❌ Manual only</td><td>You rotate by importing new material</td></tr>
+      </tbody>
+    </table>
+    <p><strong>What rotation actually does:</strong> A new key version is created and becomes the active encryption key for new data. Old versions are retained and used to decrypt previously encrypted data. No data re-encryption is needed — it's seamless.</p>
+    <div class="callout warning"><div class="callout-title">⚠ What Rotation Does NOT Do</div>Key rotation does NOT delete old key material or re-encrypt existing data. If an attacker has already stolen both the data and the key material, rotation after the fact doesn't help. Rotation reduces the window of exposure for future key compromise.</div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash · Enable key rotation via CLI</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment"># Enable annual rotation on a CMK</span>
+aws kms enable-key-rotation \
+  --key-id <span class="hl">arn:aws:kms:us-east-1:123456789:key/your-key-id</span>
+
+<span class="comment"># Verify rotation is enabled</span>
+aws kms get-key-rotation-status \
+  --key-id <span class="hl">arn:aws:kms:us-east-1:123456789:key/your-key-id</span>
+<span class="comment"># Expected: { "KeyRotationEnabled": true }</span></pre>
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">You enable annual rotation on a KMS customer-managed key. What happens to data that was encrypted last year with the old key version?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">A</span>It becomes unreadable — you must re-encrypt all existing data with the new key</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">B</span>It is automatically re-encrypted in the background with the new key version</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)"><span class="opt-key">C</span>It remains readable — old key versions are retained and used for decryption; only new encryption uses the new key</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">D</span>It is deleted — key rotation is a security measure that prevents access to old data</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 4 -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-concept">Multi-Cloud</div>
+    <h1>Multi-Cloud<br><em>Policy Translation</em></h1>
+    <p><strong>Objective:</strong> Understand how to translate the AWS CSPM concepts you've learned to Azure and GCP equivalents — building cross-cloud fluency.</p>
+    <p>Cloud security roles increasingly require multi-cloud literacy. The underlying concepts are the same — misconfig detection, benchmark compliance, governance guardrails — but the service names differ.</p>
+    <table class="styled-table">
+      <thead><tr><th>Concept</th><th>AWS</th><th>Azure</th><th>GCP</th></tr></thead>
+      <tbody>
+        <tr><td>CSPM / Posture</td><td>AWS Config + Security Hub</td><td>Microsoft Defender for Cloud</td><td>Security Command Center</td></tr>
+        <tr><td>CIS Benchmark</td><td>Security Hub CIS Standard</td><td>Defender MCSB (CIS mapping)</td><td>SCC CIS benchmark</td></tr>
+        <tr><td>Governance guardrails</td><td>Organizations SCPs</td><td>Azure Policy + Management Groups</td><td>Organization Policy Service</td></tr>
+        <tr><td>Compliance reports</td><td>AWS Artifact</td><td>Microsoft Service Trust Portal</td><td>GCP Compliance Resource Center</td></tr>
+        <tr><td>Key management</td><td>AWS KMS</td><td>Azure Key Vault</td><td>Cloud KMS</td></tr>
+      </tbody>
+    </table>
+    <div class="callout tip"><div class="callout-title">✓ Interview Tip</div>When asked about Azure or GCP in an interview, map from your AWS knowledge: "The Azure equivalent of AWS Config + Security Hub is Microsoft Defender for Cloud — it does the same continuous posture monitoring and aggregates findings against CIS benchmarks." This demonstrates architecture thinking, not just tool knowledge.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A colleague says: "We're moving some workloads to Azure. How do we do CSPM there?" What's the correct answer?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">A</span>You can't — AWS Config only works in AWS accounts</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)"><span class="opt-key">B</span>Microsoft Defender for Cloud — it's Azure's equivalent of AWS Config + Security Hub combined, with CIS benchmark support</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">C</span>Deploy an AWS Config aggregator pointing at the Azure subscription</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">D</span>Azure Monitor — it handles all security monitoring in Azure</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="next()">Start Lab →</button></div>
+  </div>
+
+  <!-- LAB -->
+  <div class="lesson-pane lab-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-On Lab</div>
+    <h1>Fix Config Findings &amp;<br><em>Enable KMS Rotation</em></h1>
+    <p>Today you work through your actual Config and Security Hub findings systematically — remediating S3 and EC2 issues, enabling KMS rotation, and targeting a CIS score above 70%.</p>
+    <div class="callout lab-note"><div class="callout-title">⚡ CIS Score Target</div>After today's lab, your CIS score should be above 70%. The combination of Days 3–5 actions plus today's targeted remediations should get you there. Track your before/after score.</div>
+
+    <div class="lab-steps">
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Block Public Access on All S3 Buckets <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>AWS Console → <strong>S3</strong> → for each bucket: click bucket name → <strong>Permissions</strong> tab</li>
+              <li>Under <strong>Block public access</strong> → <strong>Edit</strong> → check all 4 options → <strong>Save changes</strong></li>
+              <li>Or use CLI for all buckets at once:</li>
+            </ol>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre><span class="comment"># Block public access on all buckets in the account</span>
+for bucket in $(aws s3api list-buckets \
+  --query 'Buckets[].Name' --output text); do
+  aws s3api put-public-access-block \
+    --bucket <span class="hl">$bucket</span> \
+    --public-access-block-configuration \
+    "BlockPublicAcls=true,IgnorePublicAcls=true,\
+BlockPublicPolicy=true,RestrictPublicBuckets=true"
+  echo <span class="hl2">"Blocked: $bucket"</span>
+done</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Harden EC2 Security Groups <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>AWS Console → <strong>EC2</strong> → <strong>Security Groups</strong></li>
+              <li>For any security group with inbound rule allowing port 22 (SSH) or 3389 (RDP) from <code>0.0.0.0/0</code> (all IPs):</li>
+              <li>Click → <strong>Edit inbound rules</strong> → change source from <code>0.0.0.0/0</code> to <strong>My IP</strong> or remove the rule entirely if SSH is handled by Session Manager</li>
+              <li>Config rule <code>restricted-ssh</code> will move to Compliant within 5–10 minutes</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Enable KMS Key Rotation <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>AWS Console → <strong>KMS</strong> → <strong>Customer managed keys</strong></li>
+              <li>If no keys exist: <strong>Create key</strong> → Symmetric → Key material: KMS → no aliases needed → <strong>Create key</strong></li>
+              <li>Click your key → <strong>Key rotation</strong> tab → <strong>Edit</strong> → enable <strong>Automatically rotate this KMS key every year</strong> → <strong>Save</strong></li>
+              <li>Config rule <code>cmk-backing-key-rotation-enabled</code> moves to Compliant within 10 minutes</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">4</div></div>
+        <div class="step-content">
+          <div class="step-title">Review Improved CIS Score <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Security Hub → <strong>Security standards</strong> → CIS AWS Foundations Benchmark</li>
+              <li>Note your new score — target is >70%</li>
+              <li>Screenshot for portfolio (before/after comparison is very powerful)</li>
+              <li>Review remaining FAILED controls — which are realistic to fix today vs. intentional exceptions?</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Completion Checklist</h2>
+    <div class="checklist-progress">
+      <div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div>
+      <span class="checklist-progress-label" id="cl-label">0 / 6</span>
+    </div>
+    <div class="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">All S3 buckets have all 4 public access block settings enabled</div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">No security groups with SSH/RDP open to 0.0.0.0/0</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">KMS customer-managed key created with annual rotation enabled</div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">CIS score improved — screenshot showing >70% (or documented exceptions for remaining failures)</div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">Config rules for S3, SSH, and KMS rotation showing Compliant</div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">Before/after CIS score screenshots committed to portfolio</div></div>
+    </div>
+
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Portfolio Commit</h2>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre>git add screenshots/day-06-*.png
+git commit -m <span class="hl">"Day 06: S3 public access blocked, SGs hardened, KMS rotation enabled, CIS: [score]%"</span>
+git push</pre>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="finish()">Complete Day 6 ✓</button></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">🔧</span>
+      <h1>Day 6 Complete</h1>
+      <p>You can now operate CSPM tools — not just read them. You understand remediation workflows, the risks of auto-remediation, KMS key rotation, and multi-cloud policy translation.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> checklist items</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+        <button class="prev-btn" onclick="goTo(0);resetAll()">↩ Review</button>
+        <a href="../index.html" style="text-decoration:none"><button class="next-btn" style="background:var(--pill);color:var(--muted);border:1px solid var(--border-hi)">← Course Index</button></a>
+        <a href="day-07.html" style="text-decoration:none"><button class="next-btn lab-btn">Day 7 →</button></a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const STORAGE_KEY='csm-day06';const TOTAL=5;
+const titles=['CSPM Ops: Dashboard to Fix','Remediation Workflows','KMS Key Rotation','Multi-Cloud Policy Translation','Hands-on: Fix Config Findings'];
+const fb={
+  0:{good:"Correct. Start CRITICAL, assess context, then fix or suppress with justification. Disabling rules removes coverage entirely — never do that. Working LOW findings first is backwards.",bad:"Not quite. Disabling rules removes your security coverage — never the answer. Working LOW findings first ignores higher-risk items. The right approach: CRITICAL first, assess context, remediate or suppress with justification."},
+  1:{good:"Correct. A 20% false-positive rate means auto-remediation would incorrectly modify production resources 1 in 5 times. Manual review first, then suppress the exceptions before considering auto-remediation.",bad:"Not quite. Auto-remediation with a 20% false-positive rate would incorrectly modify 3 of 15 instances automatically. Review the exceptions first, suppress them, then re-evaluate whether auto-remediation is safe."},
+  2:{good:"Correct. Key rotation is non-disruptive. Old key versions are retained and continue to be used for decryption. Only new data encryption uses the new key version.",bad:"Not quite. Key rotation does not break access to old data or require re-encryption. Old key versions are retained by KMS and transparently used for decryption. Only new writes use the new key material."},
+  3:{good:"Correct. Microsoft Defender for Cloud is Azure's combined CSPM + cloud security posture management service — the equivalent of AWS Config + Security Hub, with built-in CIS benchmark support.",bad:"Not quite. Azure Monitor is observability, not security posture management. Microsoft Defender for Cloud is the Azure service that maps to AWS Config + Security Hub for CSPM and compliance benchmarking."}
+};
+let state=loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
+function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
+function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/4*100);document.getElementById('score-val').textContent=state.correct.length+' / 4 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked+' / 6';document.getElementById('pane-complete').classList.add('active');document.getElementById('topbar-title').textContent='Complete';document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
+function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
+function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
+function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
+function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
+function updateChecklist(){const total=6,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
+function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
+function resetAll(){state={current:0,done:[],correct:[],answered:[],checks:[]};saveState();document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('done'));document.querySelectorAll('.kcheck-opt').forEach(o=>{o.classList.remove('correct','wrong','reveal-correct','disabled');o.style.pointerEvents='';});document.querySelectorAll('.kcheck-feedback').forEach(f=>{f.className='kcheck-feedback';f.textContent='';});document.querySelectorAll('.check-item').forEach(i=>i.classList.remove('checked'));updateChecklist();updateProgress();goTo(0);}
+function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const paneEl=document.getElementById('pane-'+idx);if(!paneEl)return;const opts=paneEl.querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
+restoreState();
+</script>
+</body>
+</html>

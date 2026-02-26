@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloud Security Mastery Program</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0f14; --surface:#13161d; --surface2:#181c26;
+  --border:#1f2330; --border-hi:#2e3447;
+  --text:#c8d0e0; --muted:#5a6178; --faint:#3a3f52;
+  --accent:#4af0c4; --accent-dim:rgba(74,240,196,.07);
+  --amber:#f0924a; --violet:#8a7fff; --danger:#f05a5a;
+  --code-bg:#0a0c10; --pill:#1a1f2e;
+  --lab:#f0c84a;
+  --w1:#4af0c4; --w2:#8a7fff; --w3:#f0924a; --w4:#f05a5a;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+
+/* ── Top nav ── */
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:50}
+.topnav-logo{display:flex;align-items:center;gap:12px}
+.logo-mark{width:32px;height:32px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg)}
+.logo-text{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.topnav-meta{display:flex;gap:20px;align-items:center}
+.meta-chip{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:4px 10px;border-radius:4px;border:1px solid var(--border-hi)}
+.meta-chip span{color:var(--text)}
+
+/* ── Hero ── */
+.hero{padding:72px 48px 56px;border-bottom:1px solid var(--border);max-width:1000px}
+.hero-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.hero-eyebrow::before{content:'';display:inline-block;width:24px;height:2px;background:var(--accent);border-radius:1px}
+.hero h1{font-family:'DM Serif Display',serif;font-size:42px;font-weight:400;line-height:1.15;color:#e8eef8;margin-bottom:20px;letter-spacing:-.3px}
+.hero h1 em{font-style:italic;color:var(--accent)}
+.hero-desc{font-size:16px;color:#8a92a8;max-width:600px;line-height:1.8;margin-bottom:32px}
+.hero-stats{display:flex;gap:32px;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;gap:4px}
+.stat-num{font-family:'DM Serif Display',serif;font-size:28px;color:#e8eef8}
+.stat-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* ── Progress overview bar ── */
+.progress-overview{padding:24px 48px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:20px;background:var(--surface);flex-wrap:wrap}
+.progress-overview-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.progress-overview-bar{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-overview-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .6s ease;width:0%}
+.progress-overview-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap}
+.progress-overview-count span{color:var(--accent)}
+.reset-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;background:transparent;border:1px solid var(--border-hi);color:var(--muted);padding:5px 14px;border-radius:4px;cursor:pointer;transition:all .2s;white-space:nowrap;margin-left:8px}
+.reset-btn:hover{border-color:var(--danger);color:var(--danger)}
+.reset-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.reset-modal-overlay.show{display:flex}
+.reset-modal{background:var(--surface);border:1px solid var(--border-hi);border-radius:12px;padding:36px 32px;max-width:380px;width:90%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.5)}
+.reset-modal-icon{font-size:36px;margin-bottom:16px}
+.reset-modal h3{font-family:'DM Serif Display',serif;font-size:22px;color:#e8eef8;font-weight:400;margin-bottom:10px}
+.reset-modal p{font-size:13.5px;color:var(--muted);line-height:1.65;margin-bottom:28px}
+.reset-modal-btns{display:flex;gap:10px;justify-content:center}
+.reset-cancel{background:transparent;border:1px solid var(--border-hi);color:var(--muted);border-radius:6px;padding:9px 22px;font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;transition:all .15s}
+.reset-cancel:hover{color:var(--text);border-color:var(--text)}
+.reset-confirm{background:var(--danger);border:none;color:#fff;border-radius:6px;padding:9px 22px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;transition:opacity .15s;letter-spacing:.04em}
+.reset-confirm:hover{opacity:.85}
+
+/* ── Week navigation tabs ── */
+.week-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 48px;background:var(--surface);overflow-x:auto}
+.week-tab{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;padding:14px 20px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);transition:all .15s;white-space:nowrap;text-transform:uppercase}
+.week-tab:hover{color:var(--text)}
+.week-tab.active-w1{border-bottom-color:var(--w1);color:var(--w1)}
+.week-tab.active-w2{border-bottom-color:var(--w2);color:var(--w2)}
+.week-tab.active-w3{border-bottom-color:var(--w3);color:var(--w3)}
+.week-tab.active-w4{border-bottom-color:var(--w4);color:var(--w4)}
+
+/* ── Content area ── */
+.content{padding:40px 48px 80px;max-width:1000px}
+.week-panel{display:none}
+.week-panel.active{display:block}
+
+/* ── Week header ── */
+.week-header{margin-bottom:32px}
+.week-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.week-header h2{font-family:'DM Serif Display',serif;font-size:26px;font-weight:400;color:#e8eef8;margin-bottom:8px}
+.week-header p{font-size:14px;color:#8a92a8;max-width:560px;line-height:1.7}
+.week-services{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.service-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.04em;background:var(--pill);color:var(--muted);padding:3px 10px;border-radius:3px;border:1px solid var(--border-hi)}
+
+/* ── Day grid ── */
+.day-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+
+/* ── Day card ── */
+.day-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:all .2s;cursor:pointer;text-decoration:none;display:flex;flex-direction:column}
+.day-card:hover{border-color:var(--border-hi);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.day-card.available:hover{border-color:var(--accent)}
+.day-card.locked{opacity:.45;cursor:default;pointer-events:none}
+.day-card-top{padding:16px 18px 14px;border-bottom:1px solid var(--border)}
+.day-num{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+.day-card.w1 .day-num{color:var(--w1)} .day-card.w2 .day-num{color:var(--w2)}
+.day-card.w3 .day-num{color:var(--w3)} .day-card.w4 .day-num{color:var(--w4)}
+.day-card.done-card .day-num::after{content:' ✓'}
+.day-title{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.3}
+.day-card-body{padding:12px 18px 14px;flex:1}
+.day-focus{font-size:12.5px;color:#6a7490;line-height:1.55}
+.day-card-footer{padding:10px 18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.day-tags{display:flex;gap:6px;flex-wrap:wrap}
+.day-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.04em;background:var(--pill);color:var(--faint);padding:2px 7px;border-radius:3px}
+.day-status{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;display:flex;align-items:center;gap:5px}
+.day-status.available{color:var(--accent)}
+.day-status.locked{color:var(--faint)}
+.day-status.complete{color:var(--lab)}
+
+/* ── Week separator ── */
+.week-divider{display:flex;align-items:center;gap:16px;margin:40px 0 24px}
+.week-divider-line{flex:1;height:1px;background:var(--border)}
+.week-divider-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+/* ── Resources strip ── */
+.resources{padding:32px 48px;border-top:1px solid var(--border);background:var(--surface);display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;max-width:1000px}
+.resource-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px 18px;transition:border-color .15s;cursor:pointer}
+.resource-card:hover{border-color:var(--border-hi)}
+.resource-icon{font-size:20px;margin-bottom:8px}
+.resource-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.resource-desc{font-size:12.5px;color:#6a7490;line-height:1.4}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+
+@media(max-width:768px){
+  .topnav{padding:14px 20px}.hero{padding:48px 20px 40px}
+  .content{padding:28px 20px 60px}.week-tabs{padding:0 20px}
+  .progress-overview{padding:16px 20px}.resources{padding:24px 20px}
+  .hero h1{font-size:30px}.hero-stats{gap:20px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<header class="topnav">
+  <div class="topnav-logo">
+    <div class="logo-mark">CS</div>
+    <span class="logo-text">Cloud Security Mastery</span>
+  </div>
+  <div class="topnav-meta">
+    <span class="meta-chip">28 Days</span>
+    <span class="meta-chip">~4h/day</span>
+    <span class="meta-chip">AWS Free Tier</span>
+    <span class="meta-chip">Target: <span>SCS-C02</span></span>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">28-Day Curriculum</div>
+  <h1>Cloud Security<br><em>Mastery</em> Program</h1>
+  <p class="hero-desc">Enterprise-grade cloud security training — from account hardening to threat detection and SOAR automation. Hands-on AWS labs, zero cost, CISO-ready portfolio on completion.</p>
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-num">28</span><span class="stat-label">Daily lessons</span></div>
+    <div class="stat"><span class="stat-num">28</span><span class="stat-label">Hands-on labs</span></div>
+    <div class="stat"><span class="stat-num">4</span><span class="stat-label">Weeks</span></div>
+    <div class="stat"><span class="stat-num">$0</span><span class="stat-label">Cost</span></div>
+  </div>
+</section>
+
+<!-- OVERALL PROGRESS -->
+<div class="progress-overview">
+  <span class="progress-overview-label">Overall Progress</span>
+  <div class="progress-overview-bar"><div class="progress-overview-fill" id="overall-fill"></div></div>
+  <span class="progress-overview-count"><span id="overall-done">0</span> / 28 days complete</span>
+  <button class="reset-btn" onclick="openResetModal()">↺ Reset Progress</button>
+</div>
+
+<!-- Reset confirmation modal -->
+<div class="reset-modal-overlay" id="reset-modal">
+  <div class="reset-modal">
+    <div class="reset-modal-icon">⚠️</div>
+    <h3>Reset All Progress?</h3>
+    <p>This will clear your quiz answers, lab checklists, and completion status across all 28 days. Your AWS resources are not affected.</p>
+    <div class="reset-modal-btns">
+      <button class="reset-cancel" onclick="closeResetModal()">Cancel</button>
+      <button class="reset-confirm" onclick="confirmReset()">Reset Everything</button>
+    </div>
+  </div>
+</div>
+
+<!-- WEEK TABS -->
+<div class="week-tabs">
+  <div class="week-tab active-w1" onclick="showWeek(1)">Week 1 — Foundations</div>
+  <div class="week-tab" onclick="showWeek(2)">Week 2 — Identity</div>
+  <div class="week-tab" onclick="showWeek(3)">Week 3 — Protection</div>
+  <div class="week-tab" onclick="showWeek(4)">Week 4 — Detection</div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- ══ WEEK 1 ══ -->
+  <div class="week-panel active" id="week-1">
+    <div class="week-header">
+      <div class="week-eyebrow">Week 1 · Days 1–7</div>
+      <h2>Cloud Security Foundations &amp; Visibility Operations</h2>
+      <p>Establish your security baseline. Learn CSPM, deploy AWS Config and Security Hub, write your first Service Control Policies, and understand compliance evidence collection.</p>
+      <div class="week-services">
+        <span class="service-tag">AWS Config</span>
+        <span class="service-tag">Security Hub</span>
+        <span class="service-tag">Organizations</span>
+        <span class="service-tag">Artifact</span>
+        <span class="service-tag">CloudWatch</span>
+      </div>
+    </div>
+    <div class="day-grid">
+      <a class="day-card w1 available" id="card-day01" href="docs/day-01.html"><div class="day-card-top"><div class="day-num">Day 01</div><div class="day-title">AWS Account Hardening &amp; MFA Foundation</div></div><div class="day-card-body"><div class="day-focus">Shared responsibility model, root account security, phishing-resistant MFA, IAM user setup</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">IAM</span><span class="day-tag">MFA</span><span class="day-tag">Root</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w1 available" id="card-day02" href="docs/day-02.html"><div class="day-card-top"><div class="day-num">Day 02</div><div class="day-title">CSPM Foundation: AWS Config</div></div><div class="day-card-body"><div class="day-focus">What CSPM is, AWS Config's three layers, managed vs custom rules, false positive management</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">Config</span><span class="day-tag">CSPM</span><span class="day-tag">CIS</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w1 available" id="card-day03" href="docs/day-03.html"><div class="day-card-top"><div class="day-num">Day 03</div><div class="day-title">Security Hub &amp; CIS Benchmark</div></div><div class="day-card-body"><div class="day-focus">Security Hub activation, CIS AWS Foundations v1.4.0, risk scoring, compliance score baseline</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">SecurityHub</span><span class="day-tag">CIS</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w1 available" id="card-day04" href="docs/day-04.html"><div class="day-card-top"><div class="day-num">Day 04</div><div class="day-title">Policy-as-Code: Organizations SCP</div></div><div class="day-card-body"><div class="day-focus">Service Control Policies, SCP inheritance model, deny precedence logic, region restrictions</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">Organizations</span><span class="day-tag">SCP</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w1 available" id="card-day05" href="docs/day-05.html"><div class="day-card-top"><div class="day-num">Day 05</div><div class="day-title">Compliance Operations: AWS Artifact</div></div><div class="day-card-body"><div class="day-focus">SOC2 Type II, PCI DSS 4.0, evidence collection automation, compliance portfolio</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">Artifact</span><span class="day-tag">SOC2</span><span class="day-tag">PCI</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w1 available" id="card-day06" href="docs/day-06.html"><div class="day-card-top"><div class="day-num">Day 06</div><div class="day-title">CSPM Operations &amp; Remediation</div></div><div class="day-card-body"><div class="day-focus">Config remediation workflows, Security Hub insights, KMS key rotation, CIS score improvement</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">Config</span><span class="day-tag">KMS</span><span class="day-tag">Remediation</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w1 available" id="card-day07" href="docs/day-07.html"><div class="day-card-top"><div class="day-num">Day 07</div><div class="day-title">Week 1 Portfolio &amp; Review</div></div><div class="day-card-body"><div class="day-focus">Supply chain risk, multi-cloud governance, shared responsibility diagram, GitHub portfolio</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">Portfolio</span><span class="day-tag">Review</span></div><span class="day-status available">→ Open</span></div></a>
+    </div>
+  </div>
+
+  <!-- ══ WEEK 2 ══ -->
+  <div class="week-panel" id="week-2">
+    <div class="week-header">
+      <div class="week-eyebrow">Week 2 · Days 8–14</div>
+      <h2>Zero Trust Identity &amp; Access Management</h2>
+      <p>Master IAM policy evaluation, eliminate entitlement sprawl with CIEM, deploy just-in-time access, and implement IaC security scanning.</p>
+      <div class="week-services">
+        <span class="service-tag">IAM</span>
+        <span class="service-tag">Access Analyzer</span>
+        <span class="service-tag">Secrets Manager</span>
+        <span class="service-tag">Session Manager</span>
+        <span class="service-tag">Checkov</span>
+      </div>
+    </div>
+    <div class="day-grid">
+      <a class="day-card w2 available" id="card-day08" href="docs/day-08.html"><div class="day-card-top"><div class="day-num">Day 08</div><div class="day-title">IAM Policy Mastery</div></div><div class="day-card-body"><div class="day-focus">IAM evaluation logic, policy simulator, least privilege patterns, permission boundaries</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">IAM</span><span class="day-tag">Policies</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w2 available" id="card-day09" href="docs/day-09.html"><div class="day-card-top"><div class="day-num">Day 09</div><div class="day-title">Zero Trust: IAM Access Analyzer</div></div><div class="day-card-body"><div class="day-focus">Zero Trust architecture, Access Analyzer activation, external access findings, automated cleanup</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">Zero Trust</span><span class="day-tag">Analyzer</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w2 available" id="card-day10" href="docs/day-10.html"><div class="day-card-top"><div class="day-num">Day 10</div><div class="day-title">CIEM Operations</div></div><div class="day-card-body"><div class="day-focus">Entitlement sprawl, Secrets Manager, credential reports, dormant identity cleanup</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">CIEM</span><span class="day-tag">Secrets</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w2 available" id="card-day11" href="docs/day-11.html"><div class="day-card-top"><div class="day-num">Day 11</div><div class="day-title">IaC Security Scanning</div></div><div class="day-card-body"><div class="day-focus">Policy as Code, CloudFormation security, Checkov scanning, pre-deployment gates</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">IaC</span><span class="day-tag">Checkov</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w2 available" id="card-day12" href="docs/day-12.html"><div class="day-card-top"><div class="day-num">Day 12</div><div class="day-title">Privileged Access Workstations</div></div><div class="day-card-body"><div class="day-focus">PAW architecture, EC2 bastion hardening, Session Manager (no SSH), audit trails</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">PAW</span><span class="day-tag">SSM</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w2 available" id="card-day13" href="docs/day-13.html"><div class="day-card-top"><div class="day-num">Day 13</div><div class="day-title">JIT &amp; Cross-Account Access</div></div><div class="day-card-body"><div class="day-focus">Just-in-time access, temporary credentials, 1-hour TTL sessions, cross-account role trusts</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">JIT</span><span class="day-tag">STS</span></div><span class="day-status available">→ Open</span></div></a>
+    </div>
+  </div>
+
+  <!-- ══ WEEK 3 ══ -->
+  <div class="week-panel" id="week-3">
+    <div class="week-header">
+      <div class="week-eyebrow">Week 3 · Days 15–21</div>
+      <h2>Network, Data &amp; Workload Protection</h2>
+      <p>Build a production-grade VPC, implement data loss prevention with Macie, run vulnerability management with Inspector, and secure containers in ECR/EKS.</p>
+      <div class="week-services">
+        <span class="service-tag">VPC</span>
+        <span class="service-tag">KMS</span>
+        <span class="service-tag">Macie</span>
+        <span class="service-tag">Inspector</span>
+        <span class="service-tag">ECR</span>
+        <span class="service-tag">EKS</span>
+      </div>
+    </div>
+    <div class="day-grid">
+      <a class="day-card w3 available" id="card-day15" href="docs/day-15.html"><div class="day-card-top"><div class="day-num">Day 15</div><div class="day-title">VPC Network Foundation</div></div><div class="day-card-body"><div class="day-focus">3-tier VPC, public/private subnets, security groups vs NACLs, Transit Gateway</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">VPC</span><span class="day-tag">Network</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w3 available" id="card-day16" href="docs/day-16.html"><div class="day-card-top"><div class="day-num">Day 16</div><div class="day-title">Data Protection: S3 &amp; KMS</div></div><div class="day-card-body"><div class="day-focus">S3 encryption, KMS customer-managed keys, key rotation, encryption policies</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">KMS</span><span class="day-tag">S3</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w3 available" id="card-day17" href="docs/day-17.html"><div class="day-card-top"><div class="day-num">Day 17</div><div class="day-title">Macie DLP Operations</div></div><div class="day-card-body"><div class="day-focus">PII discovery, SSN/CC detection, DLP classification, GDPR Art 32 compliance</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">Macie</span><span class="day-tag">DLP  </span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w3 available" id="card-day18" href="docs/day-18.html"><div class="day-card-top"><div class="day-num">Day 18</div><div class="day-title">Inspector Vulnerability Management</div></div><div class="day-card-body"><div class="day-focus">EC2 scanning, 5000+ CVE coverage, CVSS scoring, patch SLA enforcement</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">Inspector</span><span class="day-tag">CVE</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w3 available" id="card-day19" href="docs/day-19.html"><div class="day-card-top"><div class="day-num">Day 19</div><div class="day-title">Container Security: ECR/ECS</div></div><div class="day-card-body"><div class="day-focus">ECR image scanning, Fargate deployment, immutable containers, runtime security</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">ECR</span><span class="day-tag">Fargate</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w3 available" id="card-day20" href="docs/day-20.html"><div class="day-card-top"><div class="day-num">Day 20</div><div class="day-title">Serverless &amp; EKS Security</div></div><div class="day-card-body"><div class="day-focus">Lambda IAM scoping, EKS pod security policies, runtime security checklist</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">Lambda</span><span class="day-tag">EKS</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w3 available" id="card-day21" href="docs/day-21.html"><div class="day-card-top"><div class="day-num">Day 21</div><div class="day-title">Week 3 Protection Portfolio</div></div><div class="day-card-body"><div class="day-focus">Architecture diagrams, data protection documentation, portfolio update</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">Portfolio</span></div><span class="day-status available">→ Open</span></div></a>
+    </div>
+  </div>
+
+  <!-- ══ WEEK 4 ══ -->
+  <div class="week-panel" id="week-4">
+    <div class="week-header">
+      <div class="week-eyebrow">Week 4 · Days 22–28</div>
+      <h2>Detection, Response &amp; Security Operations</h2>
+      <p>Build a CNAPP-grade detection pipeline, implement SIEM with CloudTrail + GuardDuty, model threats with STRIDE, and automate incident response with Lambda SOAR.</p>
+      <div class="week-services">
+        <span class="service-tag">CloudTrail</span>
+        <span class="service-tag">GuardDuty</span>
+        <span class="service-tag">Security Hub</span>
+        <span class="service-tag">EventBridge</span>
+        <span class="service-tag">Lambda</span>
+      </div>
+    </div>
+    <div class="day-grid">
+      <a class="day-card w4 available" id="card-day22" href="docs/day-22.html"><div class="day-card-top"><div class="day-num">Day 22</div><div class="day-title">CloudTrail &amp; SIEM Foundation</div></div><div class="day-card-body"><div class="day-focus">Multi-region CloudTrail, CloudWatch Logs Insights, SIEM dashboard, anomaly detection</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">CloudTrail</span><span class="day-tag">SIEM</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w4 available" id="card-day23" href="docs/day-23.html"><div class="day-card-top"><div class="day-num">Day 23</div><div class="day-title">GuardDuty Threat Intelligence</div></div><div class="day-card-body"><div class="day-focus">GuardDuty activation, malware + crypto detection, behavioral ML, threat findings analysis</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">GuardDuty</span><span class="day-tag">ML</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w4 available" id="card-day24" href="docs/day-24.html"><div class="day-card-top"><div class="day-num">Day 24</div><div class="day-title">Security Hub CNAPP</div></div><div class="day-card-body"><div class="day-focus">Full CNAPP integration, CIS + PCI benchmarks, unified risk dashboard, normalised scoring</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">CNAPP</span><span class="day-tag">SecurityHub</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w4 available" id="card-day25" href="docs/day-25.html"><div class="day-card-top"><div class="day-num">Day 25</div><div class="day-title">STRIDE Threat Modeling</div></div><div class="day-card-body"><div class="day-focus">STRIDE methodology, VPC + workload threat model, attack surface mapping, mitigations</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">STRIDE</span><span class="day-tag">Threat Model</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w4 available" id="card-day26" href="docs/day-26.html"><div class="day-card-top"><div class="day-num">Day 26</div><div class="day-title">Lambda SOAR Automation</div></div><div class="day-card-body"><div class="day-focus">Serverless SOAR, S3 auto-remediation Lambda, EventBridge triggers, 30s MTTR</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">SOAR</span><span class="day-tag">Lambda</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w4 available" id="card-day27" href="docs/day-27.html"><div class="day-card-top"><div class="day-num">Day 27</div><div class="day-title">Advanced Operations</div></div><div class="day-card-body"><div class="day-focus">ScoutSuite assessment, EKS monitoring, risk prioritisation matrix, pentest findings</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">ScoutSuite</span><span class="day-tag">EKS</span></div><span class="day-status available">→ Open</span></div></a>
+      <a class="day-card w4 available" id="card-day28" href="docs/day-28.html"><div class="day-card-top"><div class="day-num">Day 28</div><div class="day-title">Executive Portfolio &amp; Certification</div></div><div class="day-card-body"><div class="day-focus">Complete GitHub portfolio, executive summary, AWS Security Specialty readiness assessment</div></div><div class="day-card-footer"><div class="day-tags"><span class="day-tag">Portfolio</span><span class="day-tag">SCS-C02</span></div><span class="day-status available">→ Open</span></div></a>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- RESOURCES STRIP -->
+<div class="resources">
+  <div class="resource-card" onclick="window.open('https://aws.amazon.com/architecture/well-architected/','_blank')">
+    <div class="resource-icon">🏛️</div>
+    <div class="resource-title">Well-Architected</div>
+    <div class="resource-desc">AWS Security Pillar framework and best practices</div>
+  </div>
+  <div class="resource-card" onclick="window.open('https://attack.mitre.org/matrices/enterprise/cloud/','_blank')">
+    <div class="resource-icon">🗺️</div>
+    <div class="resource-title">MITRE ATT&amp;CK Cloud</div>
+    <div class="resource-desc">Cloud-specific adversary tactics and techniques</div>
+  </div>
+  <div class="resource-card" onclick="window.open('https://www.cisecurity.org/benchmark/amazon_web_services','_blank')">
+    <div class="resource-icon">📋</div>
+    <div class="resource-title">CIS AWS Benchmark</div>
+    <div class="resource-desc">CIS AWS Foundations v1.4.0 — 60+ controls</div>
+  </div>
+  <div class="resource-card" onclick="window.open('resources/glossary.md','_blank')">
+    <div class="resource-icon">📖</div>
+    <div class="resource-title">Glossary</div>
+    <div class="resource-desc">Key terms: CSPM, CIEM, CNAPP, SOAR, and more</div>
+  </div>
+</div>
+
+<script>
+const DAYS = 28;
+const STORAGE_KEYS = Array.from({length:DAYS},(_,i)=>'csm-day'+(String(i+1).padStart(2,'0')));
+
+// Week tab switching
+const weekColors = {1:'active-w1',2:'active-w2',3:'active-w3',4:'active-w4'};
+function showWeek(n){
+  document.querySelectorAll('.week-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.week-tab').forEach(t=>t.className='week-tab');
+  document.getElementById('week-'+n).classList.add('active');
+  const tabs = document.querySelectorAll('.week-tab');
+  tabs[n-1].classList.add(weekColors[n]);
+}
+
+// Overall progress from localStorage
+function computeProgress(){
+  let done = 0;
+  STORAGE_KEYS.forEach(key=>{
+    try{
+      const s = localStorage.getItem(key);
+      if(s){
+        const state = JSON.parse(s);
+        if(state.done && state.done.includes(4)) done++; // lab completed = day done
+      }
+    }catch(e){}
+  });
+  return done;
+}
+
+function updateProgressBar(){
+  const done = computeProgress();
+  document.getElementById('overall-done').textContent = done;
+  document.getElementById('overall-fill').style.width = (done/DAYS*100)+'%';
+
+  // Mark completed day cards
+  document.querySelectorAll('.day-card.available').forEach(card=>{
+    const href = card.getAttribute('href')||'';
+    const match = href.match(/day-(\d+)\.html/);
+    if(match){
+      const dayNum = parseInt(match[1]);
+      const key = STORAGE_KEYS[dayNum-1];
+      try{
+        const s = localStorage.getItem(key);
+        if(s){
+          const state = JSON.parse(s);
+          if(state.done && state.done.includes(4)){
+            card.classList.add('done-card');
+            const statusEl = card.querySelector('.day-status');
+            if(statusEl){statusEl.className='day-status complete';statusEl.textContent='✓ Complete';}
+          }
+        }
+      }catch(e){}
+    }
+  });
+}
+
+updateProgressBar();
+
+function openResetModal(){document.getElementById('reset-modal').classList.add('show');}
+function closeResetModal(){document.getElementById('reset-modal').classList.remove('show');}
+function confirmReset(){
+  STORAGE_KEYS.forEach(key=>{try{localStorage.removeItem(key);}catch(e){}});
+  closeResetModal();
+  // Re-render: remove done states from cards
+  document.querySelectorAll('.day-card.done-card').forEach(card=>{
+    card.classList.remove('done-card');
+    const statusEl=card.querySelector('.day-status');
+    if(statusEl&&card.classList.contains('available')){statusEl.className='day-status available';statusEl.textContent='→ Open';}
+  });
+  document.getElementById('overall-done').textContent='0';
+  document.getElementById('overall-fill').style.width='0%';
+}
+// Close modal on overlay click
+document.getElementById('reset-modal').addEventListener('click',function(e){if(e.target===this)closeResetModal();});
+</script>
+</body>
+</html>

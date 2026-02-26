@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 19 — Container Security: ECR & ECS/Fargate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#3ecfcf;--accent-dim:rgba(62,207,207,.08);--amber:#f0924a;--violet:#8a7fff;--danger:#f05a5a;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w3:#3ecfcf;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w3);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)}.tag-warning{color:var(--amber)}.tag-security{color:var(--w3)}.tag-lab{color:var(--lab)}.tag-ops{color:#f0c84a}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}.lab-pane h1 em{color:var(--lab)}
+.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+.compare-card{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.compare-card-head{padding:12px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;display:flex;align-items:center;gap:8px}
+.compare-card.ok .compare-card-head{background:rgba(62,207,207,.08);color:var(--accent)}
+.compare-card.warn .compare-card-head{background:rgba(240,146,74,.08);color:var(--amber)}
+.compare-card-body{padding:14px 16px;font-size:13px;line-height:1.65;color:#8a92a8}
+.compare-card-body strong{color:var(--text);display:block;margin-bottom:4px}
+.flow-steps{display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:24px 0}
+.flow-step{display:grid;grid-template-columns:28px 1fr;gap:14px;align-items:start;padding:14px 20px;border-bottom:1px solid var(--border)}
+.flow-step:last-child{border-bottom:none}
+.flow-num{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--w3);font-weight:600;padding-top:2px}
+.flow-body{font-size:13.5px;color:var(--text);line-height:1.6}
+.flow-body strong{color:#e0e6f0}
+.flow-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--lab)}
+.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
+.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+.styled-table tr:hover td{background:rgba(255,255,255,.02)}
+.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--w3)}
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:#3ecfcf}.code-block pre .hl2{color:var(--amber)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--w3);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
+.kcheck-opt:hover:not(.disabled){border-color:var(--w3);background:rgba(62,207,207,.05);color:var(--text)}
+.kcheck-opt.correct{border-color:var(--accent);background:rgba(62,207,207,.07);color:var(--accent)}
+.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.07);color:var(--danger)}
+.kcheck-opt.reveal-correct{border-color:rgba(62,207,207,.4);background:rgba(62,207,207,.04);color:#5ab8b8}
+.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
+.kcheck-opt.correct .opt-key{background:var(--accent);color:var(--bg)}.kcheck-opt.wrong .opt-key{background:var(--danger);color:#fff}.kcheck-opt.reveal-correct .opt-key{background:rgba(62,207,207,.2);color:var(--w3)}
+.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
+.kcheck-feedback.show{display:block}.kcheck-feedback.good{background:rgba(62,207,207,.08);border:1px solid rgba(62,207,207,.2);color:#7ecece}.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border)}.lab-step:last-child{border-bottom:none}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;position:relative;z-index:1}
+.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}.lab-step:last-child .step-connector{display:none}
+.step-content{flex:1;padding-top:4px}
+.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
+.step-body{font-size:14px;color:var(--text);line-height:1.7}
+.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}.step-body li{color:#a0a8bc}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
+.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
+.check-item:hover{border-color:var(--border-hi)}.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
+.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
+.next-btn{background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px;text-decoration:none}
+.next-btn:hover{opacity:.88}.next-btn.lab-btn{background:var(--lab)}
+.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center}
+.prev-btn:hover{color:var(--text);border-color:var(--text)}
+.completion-card{text-align:center;padding:56px 32px}
+.completion-icon{font-size:48px;margin-bottom:20px;display:block}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
+.completion-card p{color:var(--muted);max-width:420px;margin:0 auto 28px;font-size:14px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(62,207,207,.1);border:1px solid rgba(62,207,207,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.lesson-topbar{padding:14px 24px}.compare-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 3 · Day 19</div>
+    <h2>Container Security:<br>ECR & ECS/Fargate</h2>
+    <div class="sidebar-meta"><span class="chip">ECR</span><span class="chip">ECS</span><span class="chip">Fargate</span><span class="chip">4 lessons</span><span class="chip">1 lab</span></div>
+  </div>
+  <div class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">Container Threat Model</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(1)"><span class="nav-num">02</span><span class="nav-label">ECR: Image Security & Access Control</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(2)"><span class="nav-num">03</span><span class="nav-label">ECS Task IAM & Secrets Management</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(3)"><span class="nav-num">04</span><span class="nav-label">Fargate Runtime Security</span><span class="nav-check">✓</span></div>
+    <div class="nav-group-label" style="margin-top:8px">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)"><span class="nav-num" style="color:var(--lab)">🔬</span><span class="nav-label">Hands-on: ECR Scanning + Fargate Deployment</span><span class="nav-check">✓</span></div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+<div class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Day 19 &nbsp;/&nbsp; <span id="topbar-title">Container Threat Model</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- LESSON 1 -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-security">Container Security · Foundational</div>
+    <h1>Container<br><em>Threat Model</em></h1>
+    <p>Containers share the host OS kernel — unlike VMs which have fully isolated kernels. This changes the threat model fundamentally: a container escape vulnerability in the container runtime can give an attacker access to the host and every other container on it.</p>
+    <p>The container security surface spans four distinct layers, each with its own controls:</p>
+    <div class="flow-steps">
+      <div class="flow-step"><div class="flow-num">1</div><div class="flow-body"><strong>Image supply chain</strong> — vulnerable packages in the base image, secrets accidentally baked in, outdated OS layers. Controlled at build time with scanning and hardened base images.</div></div>
+      <div class="flow-step"><div class="flow-num">2</div><div class="flow-body"><strong>Registry access</strong> — who can push/pull images, and can untrusted images enter your pipeline? Controlled via ECR repository policies and image signing.</div></div>
+      <div class="flow-step"><div class="flow-num">3</div><div class="flow-body"><strong>Runtime identity</strong> — what IAM permissions does the running container have? Controlled via ECS Task IAM roles (least-privilege, no EC2 instance profile bleed-through).</div></div>
+      <div class="flow-step"><div class="flow-num">4</div><div class="flow-body"><strong>Runtime behaviour</strong> — can the container modify the host filesystem, escalate privileges, or call the metadata service? Controlled via Fargate (no host access), read-only root FS, and security options.</div></div>
+    </div>
+    <div class="callout breach">
+      <div class="callout-title">⚠ Real Breach — Tesla Cryptojacking (2018)</div>
+      Attackers found an unsecured Kubernetes dashboard with no authentication. They deployed a container running a cryptominer using the pod's IAM role to access Tesla's AWS environment. The container had a permissive IAM role (inherited from the EC2 node) that allowed S3 access. Fargate isolates this: each task gets its own IAM role and there is no shared EC2 instance profile to inherit.
+    </div>
+    <div class="callout insight">
+      <div class="callout-title">💡 Fargate vs. EC2 Launch Type — Security Perspective</div>
+      EC2 launch type: you manage the host, patch the OS, control instance profiles that all containers on the node share. Fargate: AWS manages the host completely, each task is isolated in its own micro-VM (Firecracker), and IAM is per-task only. For security, Fargate is almost always preferable — you trade infrastructure control for a dramatically reduced attack surface.
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A developer accidentally commits AWS credentials into a Docker image that gets pushed to ECR and deployed to production. What's the correct order of remediation steps?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">A</span>Delete the ECR image, then rotate the credentials — removing the image removes the exposure</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)"><span class="opt-key">B</span>Rotate/revoke the credentials immediately (assume compromised), then remove the image from ECR and all running tasks, then audit CloudTrail for any usage of the leaked keys</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">C</span>Mark the image as private in ECR — this prevents further pulls and contains the exposure</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">D</span>Rebuild and redeploy the image without the credentials — existing running containers are unaffected once the image is removed from ECR</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" disabled>← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 2 -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-concept">ECR Security · Foundational</div>
+    <h1>ECR: Image Security<br><em>& Access Control</em></h1>
+    <p><strong>Objective:</strong> Secure the ECR registry — who can push/pull, how images are scanned for CVEs, and how to enforce that only scanned-and-approved images reach production.</p>
+    <table class="styled-table">
+      <thead><tr><th>Control</th><th>What it does</th><th>Where configured</th></tr></thead>
+      <tbody>
+        <tr><td>Repository policy</td><td>Resource-based policy controlling push/pull permissions per repo</td><td>ECR repository → Permissions</td></tr>
+        <tr><td>Enhanced scanning</td><td>Inspector continuously scans images on push and on new CVE publication</td><td>ECR → Scanning configuration</td></tr>
+        <tr><td>Lifecycle policy</td><td>Auto-delete old/untagged images to reduce CVE surface</td><td>ECR repository → Lifecycle policy</td></tr>
+        <tr><td>Image immutability</td><td>Prevents overwriting an existing tag — enforces content-addressable deploys</td><td>ECR repository → Image tag mutability</td></tr>
+        <tr><td>Encryption</td><td>Images encrypted at rest with AES-256 (default) or your KMS CMK</td><td>ECR repository → Encryption settings</td></tr>
+      </tbody>
+    </table>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">JSON — ECR Repository Policy: Only CI/CD Role Can Push</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre>{
+  <span class="key">"Version"</span>: <span class="str">"2012-10-17"</span>,
+  <span class="key">"Statement"</span>: [
+    {
+      <span class="comment">// Only the CI/CD role can push images</span>
+      <span class="hl">"Sid"</span>: <span class="str">"AllowCICDPush"</span>,
+      <span class="hl">"Effect"</span>: <span class="str">"Allow"</span>,
+      <span class="hl">"Principal"</span>: { <span class="str">"AWS"</span>: <span class="str">"arn:aws:iam::123456789012:role/GitHubActionsCI"</span> },
+      <span class="hl">"Action"</span>: [
+        <span class="str">"ecr:GetDownloadUrlForLayer"</span>, <span class="str">"ecr:BatchGetImage"</span>,
+        <span class="str">"ecr:BatchCheckLayerAvailability"</span>, <span class="str">"ecr:PutImage"</span>,
+        <span class="str">"ecr:InitiateLayerUpload"</span>, <span class="str">"ecr:UploadLayerPart"</span>,
+        <span class="str">"ecr:CompleteLayerUpload"</span>
+      ]
+    },
+    {
+      <span class="comment">// ECS task execution role can pull (read-only)</span>
+      <span class="hl">"Sid"</span>: <span class="str">"AllowECSPull"</span>,
+      <span class="hl">"Effect"</span>: <span class="str">"Allow"</span>,
+      <span class="hl">"Principal"</span>: { <span class="str">"AWS"</span>: <span class="str">"arn:aws:iam::123456789012:role/ecsTaskExecutionRole"</span> },
+      <span class="hl">"Action"</span>: [
+        <span class="str">"ecr:GetDownloadUrlForLayer"</span>, <span class="str">"ecr:BatchGetImage"</span>,
+        <span class="str">"ecr:BatchCheckLayerAvailability"</span>
+      ]
+    }
+  ]
+}</pre>
+    </div>
+    <div class="callout tip">
+      <div class="callout-title">✓ Enable Image Tag Immutability</div>
+      Set ECR repositories to <strong>IMMUTABLE</strong> tag mutability. This prevents a developer from pushing a new image with the same tag (e.g. <code>latest</code> or <code>v1.2.3</code>) and silently replacing what production is running. Every image version gets a unique immutable tag — you always know exactly what code is deployed.
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Your CI pipeline pushes an image tagged <code>production-latest</code> to ECR with MUTABLE tags enabled. A junior developer accidentally runs the same push command with broken code, overwriting the tag. Production pods restart and pull the broken image. Which ECR setting would have prevented this?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">A</span>A lifecycle policy — it prevents images from being overwritten after 30 days</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)"><span class="opt-key">B</span>Image tag immutability set to IMMUTABLE — once a tag is pushed, it cannot be overwritten; the developer's push would have failed with an error</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">C</span>Enhanced scanning — it would have caught the broken image before it reached production</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">D</span>Encrypting the repository — encrypted repos require explicit permission to overwrite tags</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 3 -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-security">IAM & Secrets · Intermediate</div>
+    <h1>ECS Task IAM<br><em>& Secrets Management</em></h1>
+    <p><strong>Objective:</strong> Understand the two ECS IAM roles, why they must be separate and least-privilege, and how to inject secrets into containers without baking them into images or environment variables.</p>
+    <div class="compare-grid">
+      <div class="compare-card ok">
+        <div class="compare-card-head">🔧 Task Execution Role</div>
+        <div class="compare-card-body">
+          <strong>Used by the ECS agent, not your code</strong>
+          Pulls the image from ECR, fetches secrets from Secrets Manager or SSM Parameter Store, writes logs to CloudWatch.<br><br>
+          Needs: <code>ecr:GetDownloadUrlForLayer</code>, <code>logs:CreateLogStream</code>, <code>secretsmanager:GetSecretValue</code>
+        </div>
+      </div>
+      <div class="compare-card warn">
+        <div class="compare-card-head">⚙️ Task Role</div>
+        <div class="compare-card-body">
+          <strong>Used by your application code</strong>
+          The IAM permissions your running container process actually has — S3 reads, DynamoDB writes, SQS sends.<br><br>
+          Must be <strong>strictly least-privilege</strong>. A compromised container only has these permissions.
+        </div>
+      </div>
+    </div>
+    <div class="callout warning">
+      <div class="callout-title">⚠ Never Use Environment Variables for Secrets</div>
+      Secrets in ECS environment variables appear in plaintext in the task definition JSON (visible in the console, CLI, and CloudTrail), in container inspect output, and in any process that dumps environment variables. Always use Secrets Manager or SSM Parameter Store — the ECS agent fetches and injects the value at container start, and it's never stored in the task definition.
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">JSON — ECS Task Definition: Secrets from Secrets Manager</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre>{
+  <span class="key">"containerDefinitions"</span>: [{
+    <span class="hl">"name"</span>: <span class="str">"app"</span>,
+    <span class="hl">"image"</span>: <span class="str">"123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp:v1.2.3"</span>,
+    <span class="comment">// Secrets injected at container start — never in task definition plaintext</span>
+    <span class="hl">"secrets"</span>: [
+      {
+        <span class="str">"name"</span>: <span class="str">"DB_PASSWORD"</span>,
+        <span class="str">"valueFrom"</span>: <span class="str">"arn:aws:secretsmanager:us-east-1:123456789:secret:prod/db/password"</span>
+      },
+      {
+        <span class="str">"name"</span>: <span class="str">"API_KEY"</span>,
+        <span class="str">"valueFrom"</span>: <span class="str">"arn:aws:ssm:us-east-1:123456789:parameter/prod/api-key"</span>
+      }
+    ],
+    <span class="comment">// Block privilege escalation at the container level</span>
+    <span class="hl">"linuxParameters"</span>: {
+      <span class="str">"initProcessEnabled"</span>: true
+    },
+    <span class="hl">"readonlyRootFilesystem"</span>: true,
+    <span class="hl">"user"</span>: <span class="str">"1000:1000"</span>  <span class="comment">// non-root user</span>
+  }]
+}</pre>
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Your ECS task needs to read from S3. A developer suggests adding <code>s3:*</code> on <code>arn:aws:s3:::*</code> to the Task Role for simplicity. What's the security problem?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">A</span>No problem — the Task Role only applies to containers, not to the underlying EC2 host</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)"><span class="opt-key">B</span>If the container is compromised, the attacker inherits <code>s3:*</code> on all buckets — including sensitive buckets like logs, backups, and PCI data. The Task Role should allow only <code>s3:GetObject</code> on the specific bucket the app needs</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">C</span>ECS Task Roles don't support S3 access — you must use the Task Execution Role for all AWS API calls</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">D</span>The Task Role only applies while the container is running — once terminated, access is revoked automatically</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 4 -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-ops">Runtime Security · Intermediate</div>
+    <h1>Fargate<br><em>Runtime Security</em></h1>
+    <p><strong>Objective:</strong> Understand Fargate's security model, the runtime hardening controls available in ECS task definitions, and how immutable containers differ from mutable VM-style workloads.</p>
+    <p>Fargate runs each task in an isolated <strong>Firecracker microVM</strong> — a lightweight virtual machine with its own kernel, managed entirely by AWS. You have no SSH access, no host OS to patch, and no shared kernel with other tenants. This eliminates an entire class of attacks at the cost of reduced operational visibility.</p>
+    <table class="styled-table">
+      <thead><tr><th>Hardening control</th><th>How to enable</th><th>What it prevents</th></tr></thead>
+      <tbody>
+        <tr><td>Read-only root FS</td><td><code>"readonlyRootFilesystem": true</code> in task def</td><td>Attacker writing malware, modifying binaries</td></tr>
+        <tr><td>Non-root user</td><td><code>"user": "1000:1000"</code> in task def</td><td>UID 0 privilege escalation inside container</td></tr>
+        <tr><td>No new privileges</td><td><code>"noNewPrivileges": true</code> in linuxParameters</td><td>setuid binaries elevating container permissions</td></tr>
+        <tr><td>Drop capabilities</td><td><code>"drop": ["ALL"]</code> in capabilities</td><td>Raw network access, filesystem mounting, kernel calls</td></tr>
+        <tr><td>Block IMDS access</td><td>Set hop limit to 1 on underlying EC2 (EC2 launch type) or use Fargate (no IMDS)</td><td>Container stealing EC2 instance credentials</td></tr>
+      </tbody>
+    </table>
+    <div class="callout tip">
+      <div class="callout-title">✓ Immutable Container Philosophy</div>
+      In a properly designed container deployment, you never patch a running container — you build a new image with the fix, scan it, push it to ECR, and redeploy. Running containers are immutable artefacts. This means a read-only root filesystem is a natural fit: if the application needs to write state, it does so to a mounted volume or external service — not to its own filesystem.
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A Fargate task is running as root (UID 0) with a read-write root filesystem. The containerised app has an RCE vulnerability. What can the attacker do inside the Fargate task?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">A</span>Nothing beyond the container — Fargate's Firecracker isolation prevents any impact even for root processes</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)"><span class="opt-key">B</span>Read and modify all files in the container, install tools, call AWS APIs using the Task Role credentials, and potentially exploit container runtime vulnerabilities — root + RW filesystem maximises the blast radius inside the task boundary</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">C</span>Only read files — a read-write filesystem doesn't grant write access to a container running in Fargate</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">D</span>Access the EC2 host — Fargate tasks run on EC2 instances and root containers can access the host filesystem</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="next()">Start Lab →</button></div>
+  </div>
+
+  <!-- LAB -->
+  <div class="lesson-pane lab-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-On Lab</div>
+    <h1>ECR Scanning +<br><em>Fargate Deployment</em></h1>
+    <p>Create an ECR repository with enhanced scanning and immutable tags, push a sample image, review Inspector findings, then deploy it as a hardened Fargate task with a least-privilege Task Role and secrets from Secrets Manager.</p>
+    <div class="callout lab-note"><div class="callout-title">⚡ Cost Note</div>ECR storage: $0.10/GB/month — a small image is negligible. Fargate: ~$0.04048/vCPU-hour + $0.004445/GB-hour. Run the task for verification only (~5 min) then stop it. Total lab cost under $0.05. Delete all resources with the cleanup script.</div>
+    <div class="lab-steps">
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Create ECR Repo with Security Settings <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre><span class="comment"># Create repo with immutable tags and KMS encryption</span>
+aws ecr create-repository \
+  --repository-name <span class="str">sec-lab-app</span> \
+  --image-tag-mutability <span class="hl">IMMUTABLE</span> \
+  --image-scanning-configuration <span class="str">scanOnPush=true</span> \
+  --encryption-configuration encryptionType=<span class="hl">KMS</span>
+
+<span class="comment"># Enable Enhanced Scanning (Inspector) for all repos</span>
+aws ecr put-registry-scanning-configuration \
+  --scan-type <span class="hl">ENHANCED</span> \
+  --rules <span class="str">'[{"repositoryFilters":[{"filter":"*","filterType":"WILDCARD"}],"scanFrequency":"CONTINUOUS_SCAN"}]'</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Build & Push a Sample Image <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">dockerfile + bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre><span class="comment"># Dockerfile — minimal hardened nginx</span>
+cat > Dockerfile << <span class="str">'EOF'</span>
+FROM nginx:alpine
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+EXPOSE 8080
+<span class="str">EOF</span>
+
+<span class="comment"># Authenticate to ECR</span>
+aws ecr get-login-password --region us-east-1 | \
+  docker login --username AWS --password-stdin \
+  <span class="hl">123456789012</span>.dkr.ecr.us-east-1.amazonaws.com
+
+<span class="comment"># Build and push</span>
+docker build -t sec-lab-app:v1.0.0 .
+docker tag sec-lab-app:v1.0.0 \
+  <span class="hl">123456789012</span>.dkr.ecr.us-east-1.amazonaws.com/sec-lab-app:<span class="str">v1.0.0</span>
+docker push \
+  <span class="hl">123456789012</span>.dkr.ecr.us-east-1.amazonaws.com/sec-lab-app:<span class="str">v1.0.0</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Review Inspector Findings for the Image <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>ECR Console → <strong>sec-lab-app</strong> → Images → click <strong>v1.0.0</strong></li>
+              <li>Review the <strong>Vulnerabilities</strong> tab — note Critical/High counts</li>
+              <li>Inspector Console → Findings → filter by ECR image URI → export top 5 findings</li>
+              <li>Screenshot: image findings summary with severity breakdown</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">4</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Deploy Hardened Fargate Task <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>ECS Console → Create cluster → <strong>AWS Fargate</strong> (serverless)</li>
+              <li>Create Task Definition: Fargate, 0.25 vCPU / 0.5 GB RAM</li>
+              <li>Container: your ECR image <code>v1.0.0</code>, <code>readonlyRootFilesystem: true</code>, <code>user: 1000:1000</code></li>
+              <li>Task Role: create a minimal IAM role with only <code>logs:CreateLogStream</code> + <code>logs:PutLogEvents</code></li>
+              <li>Run task in your Day 15 VPC private subnet with <code>sg-app</code></li>
+              <li>Verify task reaches RUNNING state → stop task immediately</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">5</div></div>
+        <div class="step-content">
+          <div class="step-title">Screenshot & Cleanup <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~5 min</span></div>
+          <div class="step-body">
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre><span class="comment"># Delete ECR images and repository</span>
+aws ecr batch-delete-image --repository-name sec-lab-app \
+  --image-ids imageTag=v1.0.0
+aws ecr delete-repository --repository-name sec-lab-app --force
+
+git add screenshots/day-19-*.png
+git commit -m <span class="str">"Day 19: ECR enhanced scanning, immutable tags, hardened Fargate task"</span>
+git push</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Lab Checklist</h2>
+    <div class="checklist-progress"><div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div><span class="checklist-progress-label" id="cl-label">0 / 7</span></div>
+    <div class="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">ECR repository created with IMMUTABLE tags and Enhanced (Inspector) scanning</div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">Docker image built with non-root user and pushed to ECR</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">Inspector findings reviewed for the ECR image; severity breakdown documented</div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">ECS Fargate task definition created with <code>readonlyRootFilesystem</code> and non-root user</div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">Task Role uses least-privilege (logs only) — no wildcard S3 or Admin permissions</div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">Fargate task reached RUNNING state in private subnet; stopped immediately after verification</div></div>
+      <div class="check-item" onclick="toggleCheck(this,6)"><div class="check-box">✓</div><div class="check-text">ECR repository deleted; screenshots committed to GitHub</div></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="finish()">Complete Day 19 ✓</button></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">📦</span>
+      <h1>Day 19 Complete</h1>
+      <p>Containers secured at the image, registry, identity, and runtime layers. Day 20 extends this to serverless Lambda functions and EKS pod security — the two remaining workload types.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 7 complete</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="day-18.html" style="text-decoration:none"><button class="prev-btn">← Day 18</button></a>
+        <a href="day-20.html" style="text-decoration:none"><button class="next-btn">Day 20 →</button></a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const STORAGE_KEY='csm-day19';const TOTAL=5;
+const titles=['Container Threat Model','ECR: Image Security & Access Control','ECS Task IAM & Secrets Management','Fargate Runtime Security','Hands-on: ECR Scanning + Fargate Deployment'];
+const fb={
+  0:{good:"Correct. The credentials are the active threat — the image is just a record. Credentials must be rotated/revoked first (assume they've already been used), because even after image deletion, any attacker who pulled the image before deletion still has a copy. After revoking credentials, remove the image and all running task versions, then audit CloudTrail for any API calls made with the leaked keys in the window between push and revocation.",bad:"Not quite. Deleting the image first is the wrong order — someone may have already pulled it. The credentials are the active attack vector and must be revoked immediately. The image contains the evidence of the credential, but the credential itself is the live threat. Assume the credentials are already compromised and in use: rotate/revoke first, then remove all copies of the image, then audit for any usage."},
+  1:{good:"Correct. Image tag immutability (IMMUTABLE) prevents any push from overwriting an existing tag. The developer's push of a new image to an existing tag would fail immediately with an error, and the production <code>production-latest</code> tag would remain pointing to the original known-good image. This is a fundamental supply chain security control — you always know exactly what is deployed.",bad:"Not quite. Lifecycle policies manage image retention over time — they don't prevent tag overwrites. Enhanced scanning catches CVEs in image content, not accidental overwrites. Encryption doesn't affect tag mutability. The specific setting is Image tag mutability → IMMUTABLE. Once set, no push can overwrite an existing tag — the developer would get an error and the production image would be protected."},
+  2:{good:"Correct. The Task Role's permissions define the blast radius of a container compromise. With <code>s3:*</code> on all buckets, a compromised container can read logs, backups, PCI data, and any other S3 content in the account — far beyond what the app needs. Least-privilege means <code>s3:GetObject</code> on the specific ARN of the one bucket the app reads. This limits a compromise to only the data the app legitimately accesses.",bad:"Not quite. The Task Role applies directly to the running container process — any code the container executes (including attacker code after a compromise) inherits these permissions. <code>s3:*</code> on all resources gives a compromised container full read/write/delete access to every S3 bucket in the account. Task Role permissions must be scoped to exactly the actions and resources the application legitimately needs — nothing more."},
+  3:{good:"Correct. Running as root with a read-write filesystem maximises what an attacker can do after achieving RCE. They can: install tools (curl, ncat, crypto miners) on the RW filesystem, modify application binaries, read all files including credentials and configs, make AWS API calls using the Task Role, and attempt container runtime exploits with root privileges. Fargate's Firecracker boundary limits escape to the host, but the blast radius inside the task is as large as possible.",bad:"Not quite. Fargate's Firecracker isolation limits host escape, but within the task boundary, root + RW filesystem means maximum attacker capability. They can install tools, modify files, persist malware, read all container secrets and credentials, and call AWS APIs with the Task Role. The goal of hardening (non-root user + read-only FS) is to minimise what an attacker can do after achieving code execution — Fargate isolation alone is not sufficient."}
+};
+let state=loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
+function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
+function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/4*100);document.getElementById('score-val').textContent=state.correct.length+' / 4 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked;document.getElementById('pane-complete').classList.add('active');document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
+function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
+function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
+function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
+function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
+function updateChecklist(){const total=7,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
+function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
+function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const opts=document.querySelectorAll('#pane-'+idx+' .kcheck-opt');if(!opts.length)return;opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
+restoreState();
+</script>
+</body>
+</html>

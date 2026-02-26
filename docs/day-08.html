@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 8 — IAM Policy Mastery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#8a7fff;--accent-dim:rgba(138,127,255,.08);--amber:#f0924a;--violet:#8a7fff;--danger:#f05a5a;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w2:#8a7fff;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w2);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)}.tag-warning{color:var(--amber)}.tag-security{color:var(--accent)}.tag-lab{color:var(--lab)}.tag-review{color:var(--accent)}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}.lab-pane h1 em{color:var(--lab)}
+.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+.eval-flow{display:flex;flex-direction:column;gap:0;margin:24px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.eval-step{display:grid;grid-template-columns:28px 1fr auto;align-items:start;gap:16px;padding:14px 20px;border-bottom:1px solid var(--border)}
+.eval-step:last-child{border-bottom:none}
+.eval-num{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-top:2px}
+.eval-body{font-size:13.5px;color:var(--text);line-height:1.6}
+.eval-body strong{color:#e0e6f0}
+.eval-result{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 8px;border-radius:3px;white-space:nowrap;margin-top:4px}
+.result-deny{background:rgba(240,90,90,.15);color:var(--danger)}
+.result-allow{background:rgba(74,240,196,.1);color:#4af0c4}
+.result-check{background:rgba(138,127,255,.15);color:var(--violet)}
+.policy-anatomy{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin:24px 0}
+.anatomy-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--violet);margin-bottom:16px}
+.anatomy-row{display:grid;grid-template-columns:140px 1fr;gap:16px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13.5px}
+.anatomy-row:last-child{border-bottom:none}
+.anatomy-key{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--lab)}
+.anatomy-val{color:#8a92a8;line-height:1.6}
+.anatomy-val strong{color:var(--text)}
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:#8a7fff}.code-block pre .hl2{color:var(--amber)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--violet);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
+.kcheck-opt:hover:not(.disabled){border-color:var(--violet);background:rgba(138,127,255,.05);color:var(--text)}
+.kcheck-opt.correct{border-color:var(--accent);background:rgba(138,127,255,.1);color:var(--accent)}
+.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.07);color:var(--danger)}
+.kcheck-opt.reveal-correct{border-color:var(--accent);background:rgba(138,127,255,.05);color:#7a70cc}
+.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
+.kcheck-opt.correct .opt-key{background:var(--accent);color:#fff}.kcheck-opt.wrong .opt-key{background:var(--danger);color:#fff}.kcheck-opt.reveal-correct .opt-key{background:rgba(138,127,255,.25);color:var(--accent)}
+.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
+.kcheck-feedback.show{display:block}.kcheck-feedback.good{background:rgba(138,127,255,.08);border:1px solid rgba(138,127,255,.2);color:#9d94d8}.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border)}.lab-step:last-child{border-bottom:none}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}.lab-step:last-child .step-connector{display:none}
+.step-content{flex:1;padding-top:4px}
+.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
+.step-body{font-size:14px;color:var(--text);line-height:1.7}
+.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}.step-body li{color:#a0a8bc}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
+.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
+.check-item:hover{border-color:var(--border-hi)}.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
+.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
+.next-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px;text-decoration:none}
+.next-btn:hover{opacity:.88}.next-btn.lab-btn{background:var(--lab);color:var(--bg)}
+.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center}
+.prev-btn:hover{color:var(--text);border-color:var(--text)}
+.completion-card{text-align:center;padding:56px 32px}
+.completion-icon{font-size:48px;margin-bottom:20px;display:block}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
+.completion-card p{color:var(--muted);max-width:420px;margin:0 auto 28px;font-size:14px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(138,127,255,.1);border:1px solid rgba(138,127,255,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.lesson-topbar{padding:14px 24px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 2 · Day 8</div>
+    <h2>IAM Policy<br>Mastery</h2>
+    <div class="sidebar-meta"><span class="chip">Identity</span><span class="chip">4 lessons</span><span class="chip">1 lab</span><span class="chip">~4h</span></div>
+  </div>
+  <div class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">IAM Evaluation Logic</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(1)"><span class="nav-num">02</span><span class="nav-label">Policy Types &amp; Structure</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(2)"><span class="nav-num">03</span><span class="nav-label">Least Privilege &amp; Boundaries</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(3)"><span class="nav-num">04</span><span class="nav-label">IAM Policy Simulator</span><span class="nav-check">✓</span></div>
+    <div class="nav-group-label" style="margin-top:8px">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)"><span class="nav-num" style="color:var(--lab)">🔬</span><span class="nav-label">Hands-on: 5 Custom IAM Policies</span><span class="nav-check">✓</span></div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+<div class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Week 2 · Day 8 &nbsp;/&nbsp; <span id="topbar-title">IAM Evaluation Logic</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- LESSON 1 -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-concept">Core Concept</div>
+    <h1>IAM<br><em>Evaluation Logic</em></h1>
+    <p><strong>Objective:</strong> Understand the exact order in which AWS evaluates IAM policies so you can predict whether a request will be allowed or denied — before you deploy anything.</p>
+    <p>Every single API call in AWS goes through IAM evaluation. Whether it's an EC2 instance calling S3, a Lambda function writing to DynamoDB, or a developer deleting a security group — the same six-step logic applies.</p>
+
+    <div class="eval-flow">
+      <div class="eval-step">
+        <div class="eval-num">1</div>
+        <div class="eval-body"><strong>Explicit Deny check</strong> — Is there any policy (identity, resource, SCP, permission boundary) that explicitly denies this action? If yes, stop immediately.</div>
+        <div class="eval-result result-deny">→ DENY</div>
+      </div>
+      <div class="eval-step">
+        <div class="eval-num">2</div>
+        <div class="eval-body"><strong>SCP check (Organizations)</strong> — Is the action within the SCPs allowed for this account? If SCPs don't allow it, no identity policy can override.</div>
+        <div class="eval-result result-deny">→ DENY if blocked</div>
+      </div>
+      <div class="eval-step">
+        <div class="eval-num">3</div>
+        <div class="eval-body"><strong>Resource-based policy check</strong> — Is there a resource policy (e.g. S3 bucket policy, KMS key policy) that explicitly allows this principal?</div>
+        <div class="eval-result result-allow">→ ALLOW if matched</div>
+      </div>
+      <div class="eval-step">
+        <div class="eval-num">4</div>
+        <div class="eval-body"><strong>Permission boundary check</strong> — If the identity has a permission boundary, the action must also be allowed in the boundary policy.</div>
+        <div class="eval-result result-deny">→ DENY if not in boundary</div>
+      </div>
+      <div class="eval-step">
+        <div class="eval-num">5</div>
+        <div class="eval-body"><strong>Identity policy check</strong> — Is the action explicitly allowed in the attached identity policies (inline, managed, group)?</div>
+        <div class="eval-result result-check">→ ALLOW if found</div>
+      </div>
+      <div class="eval-step">
+        <div class="eval-num">6</div>
+        <div class="eval-body"><strong>Implicit deny</strong> — No explicit allow found anywhere. Default behaviour is deny.</div>
+        <div class="eval-result result-deny">→ DENY (default)</div>
+      </div>
+    </div>
+
+    <div class="callout insight"><div class="callout-title">💡 The Key Insight</div>There is no "allow by default" anywhere in AWS. Every action is denied unless there is an explicit allow — and even then, an explicit deny anywhere in the chain overrides it. This is the foundation of Zero Trust in IAM.</div>
+
+    <div class="callout breach"><div class="callout-title">⚠ Real Breach Pattern — Capital One (2019)</div>A misconfigured EC2 IAM role had an overly broad policy. The instance metadata service (IMDS) returned temporary credentials to anyone who could reach it via SSRF. Those credentials had S3:GetObject across all buckets. Explicit allow + no boundary = 100M+ customer records exfiltrated.</div>
+
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A developer has an identity policy that explicitly allows <code>s3:DeleteBucket</code>. The AWS Organizations SCP for this account denies <code>s3:DeleteBucket</code>. What happens when they try to delete a bucket?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">A</span>The identity policy wins — it's more specific than the SCP</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)"><span class="opt-key">B</span>The request is denied — SCPs are evaluated before identity policies and explicit deny always wins</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">C</span>The request succeeds only if the developer is an admin</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">D</span>AWS prompts for MFA before allowing the destructive action</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" disabled>← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 2 -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-concept">Policy Structure</div>
+    <h1>Policy Types<br><em>&amp; Structure</em></h1>
+    <p><strong>Objective:</strong> Know the anatomy of an IAM policy document and the differences between the six policy types so you can choose the right tool for each security requirement.</p>
+
+    <div class="policy-anatomy">
+      <div class="anatomy-title">IAM Policy Document Anatomy</div>
+      <div class="anatomy-row"><div class="anatomy-key">Version</div><div class="anatomy-val">Always <strong>"2012-10-17"</strong> — the policy language version. Never omit this.</div></div>
+      <div class="anatomy-row"><div class="anatomy-key">Effect</div><div class="anatomy-val"><strong>Allow</strong> or <strong>Deny</strong>. Deny overrides any Allow.</div></div>
+      <div class="anatomy-row"><div class="anatomy-key">Action</div><div class="anatomy-val">AWS API operations: <strong>s3:GetObject</strong>, <strong>ec2:*</strong>, <strong>iam:CreateUser</strong>. Use wildcards carefully.</div></div>
+      <div class="anatomy-row"><div class="anatomy-key">Resource</div><div class="anatomy-val">ARN of the target resource. <strong>*</strong> means all resources. Scope as tightly as possible.</div></div>
+      <div class="anatomy-row"><div class="anatomy-key">Principal</div><div class="anatomy-val">Who the policy applies to. Used in resource-based policies, not identity policies.</div></div>
+      <div class="anatomy-row"><div class="anatomy-key">Condition</div><div class="anatomy-val">Optional constraints: require MFA, restrict to IP, enforce TLS, limit to specific regions.</div></div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">JSON — Least Privilege S3 Read Policy</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre>{
+  <span class="key">"Version"</span>: <span class="str">"2012-10-17"</span>,
+  <span class="key">"Statement"</span>: [
+    {
+      <span class="key">"Sid"</span>: <span class="str">"AllowReadProductionBucket"</span>,
+      <span class="key">"Effect"</span>: <span class="hl">"Allow"</span>,
+      <span class="key">"Action"</span>: [
+        <span class="str">"s3:GetObject"</span>,
+        <span class="str">"s3:GetObjectVersion"</span>
+      ],
+      <span class="key">"Resource"</span>: <span class="str">"arn:aws:s3:::my-production-bucket/*"</span>,
+      <span class="key">"Condition"</span>: {
+        <span class="key">"Bool"</span>: {
+          <span class="str">"aws:SecureTransport"</span>: <span class="hl2">"true"</span>  <span class="comment">// HTTPS only</span>
+        }
+      }
+    }
+  ]
+}</pre>
+    </div>
+
+    <p><strong>The six policy types:</strong> Identity policies (attached to users/roles/groups) are the most common. Resource-based policies live on the resource itself (S3 buckets, KMS keys, Lambda). SCPs are guardrails applied at the Organizations level. Permission boundaries limit the maximum permissions an identity can have. Session policies constrain temporary credentials. ACLs are legacy and largely replaced by bucket policies.</p>
+
+    <div class="callout tip"><div class="callout-title">✓ Best Practice: Always Scope Resources</div>Never write <code>"Resource": "*"</code> unless you genuinely mean all resources in all regions in all accounts. A policy with <code>"Action": "s3:*", "Resource": "*"</code> is a lateral movement gift to any attacker who compromises that identity.</div>
+
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">You need to give an external security vendor read-only access to your S3 audit logs bucket. They have their own AWS account. Which policy type is most appropriate?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">A</span>Identity policy on an IAM user — create a user and share the access keys</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)"><span class="opt-key">B</span>Resource-based policy (S3 bucket policy) granting access to the vendor's AWS account principal via cross-account role assumption</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">C</span>SCP — apply it to your account to allow cross-account S3 access</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">D</span>Permission boundary — apply it to the bucket to restrict who can access it</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 3 -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-security">Zero Trust</div>
+    <h1>Least Privilege<br><em>&amp; Permission Boundaries</em></h1>
+    <p><strong>Objective:</strong> Apply least privilege as an operational discipline and use permission boundaries to safely delegate IAM administration without creating privilege escalation paths.</p>
+
+    <p>Least privilege sounds simple: grant only what's needed. In practice it's operationally hard because developers ask for broad permissions to move fast, and security teams can't easily audit hundreds of policies. The tools that make least privilege practical are <strong>IAM Access Advisor</strong>, <strong>last-accessed data</strong>, and <strong>permission boundaries</strong>.</p>
+
+    <div class="callout insight"><div class="callout-title">💡 The 10× Sprawl Problem</div>Palo Alto Unit 42 found that cloud identities have on average 10× more permissions than they actually use. This isn't malice — it's laziness and convenience. The fix is automated right-sizing using last-accessed data, not manual policy review.</div>
+
+    <p><strong>Permission boundaries</strong> solve a specific problem: you want to let developers create IAM roles for their applications, but you don't want them to be able to create roles with more permissions than they themselves have (privilege escalation). A permission boundary says: "this identity can never have permissions beyond this boundary, regardless of what policies are attached to it."</p>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">JSON — Developer Permission Boundary</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment">// Boundary attached to dev IAM roles.
+// They can do anything WITHIN this boundary —
+// but can never grant permissions BEYOND it.</span>
+{
+  <span class="key">"Version"</span>: <span class="str">"2012-10-17"</span>,
+  <span class="key">"Statement"</span>: [
+    {
+      <span class="key">"Effect"</span>: <span class="hl">"Allow"</span>,
+      <span class="key">"Action"</span>: [
+        <span class="str">"s3:*"</span>, <span class="str">"dynamodb:*"</span>, <span class="str">"lambda:*"</span>, <span class="str">"cloudwatch:*"</span>
+      ],
+      <span class="key">"Resource"</span>: <span class="str">"*"</span>
+    },
+    {
+      <span class="key">"Effect"</span>: <span class="hl2">"Deny"</span>,
+      <span class="comment">// Devs can never touch IAM or security services</span>
+      <span class="key">"Action"</span>: [<span class="str">"iam:*"</span>, <span class="str">"organizations:*"</span>, <span class="str">"guardduty:*"</span>],
+      <span class="key">"Resource"</span>: <span class="str">"*"</span>
+    }
+  ]
+}</pre>
+    </div>
+
+    <div class="callout warning"><div class="callout-title">⚠ Common Mistake — Wildcard Actions on Narrow Resources</div><code>"Action": "s3:*", "Resource": "arn:aws:s3:::prod-bucket/*"</code> looks scoped but still allows <code>s3:PutBucketPolicy</code> — which lets the holder make the bucket public. Always think about what each action actually enables, not just what service it touches.</div>
+
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A developer has an identity policy with <code>iam:CreateRole</code> permission. A permission boundary is attached that only allows S3 and Lambda actions. Can the developer create an IAM role?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">A</span>Yes — the identity policy explicitly allows iam:CreateRole</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)"><span class="opt-key">B</span>No — the permission boundary doesn't include iam:CreateRole, so it's implicitly denied regardless of the identity policy</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">C</span>Yes — permission boundaries only apply to the permissions of roles created by the developer, not to the developer themselves</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">D</span>It depends on whether the developer is in the admin group</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 4 -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-concept">Tooling</div>
+    <h1>IAM Policy<br><em>Simulator</em></h1>
+    <p><strong>Objective:</strong> Use the AWS IAM Policy Simulator to validate policies before deployment, catch privilege escalation paths, and build testable policy documentation for your portfolio.</p>
+
+    <p>The IAM Policy Simulator lets you test policies against specific API actions without executing them in your real environment. It's the closest thing to a "dry run" for access control — and it's free.</p>
+
+    <div class="callout tip"><div class="callout-title">✓ When to Use the Simulator</div>Before deploying any new IAM role or policy. After incident response to verify a scoped-down policy works. When onboarding a third-party tool and validating the minimal permissions it actually needs. Before any compliance audit to generate testable evidence.</div>
+
+    <p>The simulator evaluates a given principal + action + resource combination through the same evaluation logic AWS uses in production. It tells you which specific statement caused an allow or deny — invaluable for debugging complex policy interactions.</p>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash — CLI Policy Simulation</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment"># Simulate whether a role can delete S3 objects</span>
+aws iam simulate-principal-policy \
+  --policy-source-arn <span class="hl">arn:aws:iam::123456789:role/AppRole</span> \
+  --action-names <span class="hl2">s3:DeleteObject</span> \
+  --resource-arns <span class="str">arn:aws:s3:::prod-bucket/*</span>
+
+<span class="comment"># Output: EvalDecision = "implicitDeny" or "allowed" or "explicitDeny"
+# Also shows: MatchedStatements — which statement caused the result</span></pre>
+    </div>
+
+    <div class="callout insight"><div class="callout-title">💡 Policy Simulation Prevents 92% of Privilege Escalation</div>Permiso Security (2025) found that organisations that use policy simulation as a pre-deployment gate reduce privilege escalation incidents by 92%. The check takes 30 seconds. The breach costs $4.45M average.</div>
+
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">You run the IAM Policy Simulator and it returns <code>EvalDecision: implicitDeny</code> for <code>dynamodb:PutItem</code>. What does this mean?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">A</span>There's an explicit Deny statement blocking the action</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)"><span class="opt-key">B</span>No policy has explicitly allowed this action — the default deny applies. No statement is blocking it; it's simply not permitted.</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">C</span>The DynamoDB table has a resource policy that blocks the principal</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">D</span>The SCP for this account denies DynamoDB operations</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="next()">Start Lab →</button></div>
+  </div>
+
+  <!-- LAB -->
+  <div class="lesson-pane lab-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-On Lab</div>
+    <h1>5 Custom IAM Policies<br><em>&amp; Simulator Testing</em></h1>
+    <p>Build five real-world IAM policies covering different access patterns, test each with the Policy Simulator, and document the results as portfolio evidence.</p>
+    <div class="callout lab-note"><div class="callout-title">⚡ Lab Prerequisites</div>IAM admin user from Day 1. AWS Console access. No additional services needed — IAM and the Policy Simulator are always free.</div>
+
+    <div class="lab-steps">
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Create 5 Custom Managed Policies <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~30 min</span></div>
+          <div class="step-body">
+            <p style="color:#8a92a8;margin-bottom:12px">IAM → Policies → Create policy → JSON tab. Create one policy for each pattern below.</p>
+            <ol>
+              <li><strong>S3-ReadOnly-Prod</strong> — s3:GetObject, s3:ListBucket on arn:aws:s3:::*prod* only</li>
+              <li><strong>DynamoDB-AppRole</strong> — dynamodb:PutItem, GetItem, UpdateItem, Query on a specific table ARN</li>
+              <li><strong>EC2-ReadOnly-Viewer</strong> — ec2:Describe* on all resources, nothing else</li>
+              <li><strong>Lambda-Deploy-NoBoundary</strong> — lambda:CreateFunction, UpdateFunctionCode. No iam:* allowed</li>
+              <li><strong>Deny-Destructive-Actions</strong> — Explicit Deny on s3:DeleteBucket, ec2:TerminateInstances, rds:DeleteDBInstance</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Create a Test Role &amp; Attach Policies <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>IAM → Roles → Create role → Trusted entity: AWS account (this account)</li>
+              <li>Attach your 5 custom policies to this role</li>
+              <li>Name it <code>csm-day08-test-role</code></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Run Policy Simulator Tests <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~20 min</span></div>
+          <div class="step-body">
+            <p style="color:#8a92a8;margin-bottom:10px">IAM → Policy Simulator → Select your test role → Run these 6 tests and screenshot each result:</p>
+            <ol>
+              <li><code>s3:GetObject</code> on <code>arn:aws:s3:::my-prod-bucket/file.txt</code> → Expected: Allow</li>
+              <li><code>s3:DeleteObject</code> on same bucket → Expected: ImplicitDeny</li>
+              <li><code>s3:DeleteBucket</code> → Expected: ExplicitDeny (from policy #5)</li>
+              <li><code>ec2:DescribeInstances</code> → Expected: Allow</li>
+              <li><code>ec2:TerminateInstances</code> → Expected: ExplicitDeny</li>
+              <li><code>iam:CreateUser</code> → Expected: ImplicitDeny</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">4</div></div>
+        <div class="step-content">
+          <div class="step-title">Document as Portfolio Evidence <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Save simulator screenshots to <code>portfolio/screenshots/day-08-simulator/</code></li>
+              <li>Export each policy JSON to <code>labs/week-2/day-08-policies/</code></li>
+              <li>Write <code>DAY-08-IAM-Policies.md</code>: one paragraph per policy explaining the business use case and what it allows/denies</li>
+              <li>GitHub commit: <code>"Day 8: 5 IAM policies + simulator validation — all 6 tests pass"</code></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Lab Completion Checklist</h2>
+    <div class="checklist-progress"><div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div><span class="checklist-progress-label" id="cl-label">0 / 6</span></div>
+    <div class="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">5 custom managed IAM policies created in console</div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">Test role created with all 5 policies attached</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">All 6 Policy Simulator tests run and results match expected outcomes</div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">Screenshots saved to portfolio/screenshots/day-08-simulator/</div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">Policy JSON files exported to labs/week-2/day-08-policies/</div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">DAY-08-IAM-Policies.md written and committed to GitHub</div></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="finish()">Complete Day 8 ✓</button></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">🎯</span>
+      <h1>Day 8 Complete!</h1>
+      <p>You understand IAM evaluation logic, policy anatomy, least privilege patterns, permission boundaries, and can validate policies with the simulator before deployment.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 6 items</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="../../index.html" style="text-decoration:none"><button class="prev-btn">← Course Index</button></a>
+        <a href="day-09.html" style="text-decoration:none"><button class="next-btn">Day 9: Access Analyzer →</button></a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const STORAGE_KEY='csm-day08';const TOTAL=5;
+const titles=['IAM Evaluation Logic','Policy Types & Structure','Least Privilege & Boundaries','IAM Policy Simulator','Hands-on: 5 Custom IAM Policies'];
+const fb={
+  0:{good:"Correct. SCPs are evaluated before identity policies. An explicit deny in an SCP overrides any Allow in an identity policy — even AdministratorAccess. The developer's request is denied immediately at step 2.",bad:"Not quite. IAM evaluation is hierarchical: SCPs are checked before identity policies. An SCP deny cannot be overridden by an identity policy, regardless of admin status or specificity."},
+  1:{good:"Correct. For cross-account access, the cleanest architecture is a resource-based bucket policy that allows the vendor's AWS account to assume a role with read access. No long-lived credentials leave your account, and you can revoke access instantly.",bad:"Not quite. Creating an IAM user and sharing keys creates long-lived credentials you can't easily revoke. Cross-account role assumption via resource-based policy is the right pattern — no keys leave your account."},
+  2:{good:"Correct. For an action to be allowed, it must be permitted by BOTH the identity policy AND the permission boundary. The boundary doesn't include iam:CreateRole, so even though the identity policy allows it, the request is denied.",bad:"Not quite. Permission boundaries work as an intersection: an action must be allowed in BOTH the identity policy AND the boundary to succeed. Since the boundary only allows S3 and Lambda, iam:CreateRole is denied regardless of what the identity policy says."},
+  3:{good:"Correct. ImplicitDeny means no policy statement explicitly denied the action, but no statement explicitly allowed it either. The default state in AWS is deny — so without an Allow, nothing is permitted.",bad:"Not quite. ImplicitDeny and ExplicitDeny are different. ImplicitDeny means no Allow was found anywhere in the evaluation chain — it's the default. ExplicitDeny means a Deny statement actively blocked it. You'd see ExplicitDeny if an SCP or Deny statement was involved."}
+};
+let state=loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
+function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
+function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));document.getElementById('score-val').textContent=state.correct.length+' / 4';document.getElementById('lab-score-val').textContent=state.checks.filter(Boolean).length;document.getElementById('pane-complete').classList.add('active');document.getElementById('topbar-title').textContent='Day 8 Complete!';document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
+function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
+function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
+function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
+function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
+function updateChecklist(){const total=6,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
+function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
+function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const paneEl=document.getElementById('pane-'+idx);if(!paneEl)return;const opts=paneEl.querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
+restoreState();
+</script>
+</body>
+</html>

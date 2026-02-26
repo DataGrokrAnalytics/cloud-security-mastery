@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 18 — Inspector Vulnerability Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#3ecfcf;--accent-dim:rgba(62,207,207,.08);--amber:#f0924a;--violet:#8a7fff;--danger:#f05a5a;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w3:#3ecfcf;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w3);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)}.tag-warning{color:var(--amber)}.tag-security{color:var(--w3)}.tag-lab{color:var(--lab)}.tag-ops{color:#f0c84a}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}.lab-pane h1 em{color:var(--lab)}
+.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+.sla-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:24px 0}
+.sla-card{border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;background:var(--surface)}
+.sla-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:3px;display:inline-block;margin-bottom:10px}
+.sla-badge.crit{background:rgba(240,90,90,.15);color:var(--danger)}
+.sla-badge.high{background:rgba(240,146,74,.15);color:var(--amber)}
+.sla-badge.med{background:rgba(240,200,74,.12);color:var(--lab)}
+.sla-badge.low{background:rgba(62,207,207,.1);color:var(--w3)}
+.sla-ttl{font-family:'DM Serif Display',serif;font-size:22px;color:#e4eaf6;margin-bottom:4px}
+.sla-label{font-size:11px;color:var(--muted)}
+.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
+.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+.styled-table tr:hover td{background:rgba(255,255,255,.02)}
+.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--w3)}
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:#3ecfcf}.code-block pre .hl2{color:var(--amber)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--w3);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
+.kcheck-opt:hover:not(.disabled){border-color:var(--w3);background:rgba(62,207,207,.05);color:var(--text)}
+.kcheck-opt.correct{border-color:var(--accent);background:rgba(62,207,207,.07);color:var(--accent)}
+.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.07);color:var(--danger)}
+.kcheck-opt.reveal-correct{border-color:rgba(62,207,207,.4);background:rgba(62,207,207,.04);color:#5ab8b8}
+.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
+.kcheck-opt.correct .opt-key{background:var(--accent);color:var(--bg)}.kcheck-opt.wrong .opt-key{background:var(--danger);color:#fff}.kcheck-opt.reveal-correct .opt-key{background:rgba(62,207,207,.2);color:var(--w3)}
+.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
+.kcheck-feedback.show{display:block}.kcheck-feedback.good{background:rgba(62,207,207,.08);border:1px solid rgba(62,207,207,.2);color:#7ecece}.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border)}.lab-step:last-child{border-bottom:none}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;position:relative;z-index:1}
+.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}.lab-step:last-child .step-connector{display:none}
+.step-content{flex:1;padding-top:4px}
+.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
+.step-body{font-size:14px;color:var(--text);line-height:1.7}
+.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}.step-body li{color:#a0a8bc}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
+.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
+.check-item:hover{border-color:var(--border-hi)}.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
+.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
+.next-btn{background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px;text-decoration:none}
+.next-btn:hover{opacity:.88}.next-btn.lab-btn{background:var(--lab)}
+.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center}
+.prev-btn:hover{color:var(--text);border-color:var(--text)}
+.completion-card{text-align:center;padding:56px 32px}
+.completion-icon{font-size:48px;margin-bottom:20px;display:block}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
+.completion-card p{color:var(--muted);max-width:420px;margin:0 auto 28px;font-size:14px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(62,207,207,.1);border:1px solid rgba(62,207,207,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.lesson-topbar{padding:14px 24px}.sla-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 3 · Day 18</div>
+    <h2>Inspector Vulnerability<br>Management</h2>
+    <div class="sidebar-meta"><span class="chip">Inspector</span><span class="chip">CVE</span><span class="chip">CVSS</span><span class="chip">4 lessons</span><span class="chip">1 lab</span></div>
+  </div>
+  <div class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">Vulnerability Management Fundamentals</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(1)"><span class="nav-num">02</span><span class="nav-label">How Inspector Works: EC2 & ECR</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(2)"><span class="nav-num">03</span><span class="nav-label">CVSS Scoring & Prioritisation</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(3)"><span class="nav-num">04</span><span class="nav-label">Patch SLAs & Auto-Remediation</span><span class="nav-check">✓</span></div>
+    <div class="nav-group-label" style="margin-top:8px">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)"><span class="nav-num" style="color:var(--lab)">🔬</span><span class="nav-label">Hands-on: EC2 Scan & CVE Assessment Report</span><span class="nav-check">✓</span></div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+<div class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Day 18 &nbsp;/&nbsp; <span id="topbar-title">Vulnerability Management Fundamentals</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- LESSON 1 -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-security">Vulnerability Management · Foundational</div>
+    <h1>Vulnerability Management<br><em>Fundamentals</em></h1>
+    <p>Every package installed on an EC2 instance, every base image used in a container, has a version number — and somewhere in a public database, security researchers are discovering that specific versions contain exploitable flaws. Vulnerability management is the discipline of <strong>finding those flaws before attackers do and fixing them before they're weaponised</strong>.</p>
+    <p>The threat is real and fast-moving: on average, there are 25,000+ new CVEs published per year. A critical vulnerability can go from disclosure to active exploitation in under 24 hours. Without automated, continuous scanning, you're always reacting — not preventing.</p>
+    <div class="callout breach">
+      <div class="callout-title">⚠ Real Breach — Equifax (2017)</div>
+      Apache Struts CVE-2017-5638 was publicly disclosed on March 7th. Equifax was notified by US-CERT. They failed to patch for 78 days. On May 13th, attackers exploited it and exfiltrated 147 million Americans' personal data. The patch was available. The vulnerability scanner would have flagged it. The breach cost $1.4 billion. This is the canonical case for why vulnerability SLAs with enforcement matter.
+    </div>
+    <p>Vulnerability management has four phases — most teams only reliably do the first two:</p>
+    <table class="styled-table">
+      <thead><tr><th>Phase</th><th>Activity</th><th>AWS tool</th></tr></thead>
+      <tbody>
+        <tr><td>Discover</td><td>Find all software packages and versions across your estate</td><td>Inspector (agentless EC2 + ECR)</td></tr>
+        <tr><td>Assess</td><td>Score each finding by exploitability and impact (CVSS)</td><td>Inspector risk score + exploit prediction</td></tr>
+        <tr><td>Prioritise</td><td>Focus on what's exploitable and internet-reachable first</td><td>Inspector + Security Hub filters</td></tr>
+        <tr><td>Remediate</td><td>Patch, upgrade, or accept risk within defined SLAs</td><td>SSM Patch Manager + EventBridge automation</td></tr>
+      </tbody>
+    </table>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A critical CVE is published for OpenSSL affecting versions before 3.0.8. Your Inspector scan shows 12 EC2 instances running OpenSSL 3.0.7. What should happen first?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">A</span>Wait for the next scheduled monthly patch window — critical patches still follow the standard patch cycle</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)"><span class="opt-key">B</span>Assess exploitability immediately — are the instances internet-reachable? Is exploit code public? Then patch within the Critical SLA (typically 24–72h) regardless of the patch window</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">C</span>Accept the risk in the risk register — OpenSSL is widely used and patching is disruptive</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">D</span>Terminate and recreate all 12 instances from the latest AMI — this is faster than patching</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" disabled>← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 2 -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-concept">Inspector Architecture · Foundational</div>
+    <h1>How Inspector Works:<br><em>EC2 & ECR</em></h1>
+    <p><strong>Objective:</strong> Understand Inspector v2's agentless architecture, the two scanning surfaces (EC2 and ECR), and how findings flow to Security Hub.</p>
+    <p>Amazon Inspector v2 is fundamentally different from v1 — it's <strong>agentless for EC2</strong> (using AWS Systems Manager for inventory, no dedicated agent), and it scans <strong>container images in ECR</strong> at push time and on a schedule. You enable it once per account and it begins scanning automatically.</p>
+    <table class="styled-table">
+      <thead><tr><th>Scan type</th><th>What's scanned</th><th>When</th><th>Requires</th></tr></thead>
+      <tbody>
+        <tr><td>EC2 OS</td><td>Installed packages, OS version, kernel</td><td>On instance launch + every 24h</td><td>SSM Agent on instance</td></tr>
+        <tr><td>EC2 Code</td><td>Application code dependencies (Node, Python, Java)</td><td>On launch + change detection</td><td>SSM Agent + code scanning enabled</td></tr>
+        <tr><td>ECR image</td><td>Container image layers for CVEs</td><td>On push + re-scan on new CVE</td><td>Inspector + ECR enhanced scanning</td></tr>
+        <tr><td>Lambda</td><td>Function code packages and layers</td><td>On deploy + scheduled</td><td>Inspector Lambda scanning enabled</td></tr>
+      </tbody>
+    </table>
+    <div class="callout tip">
+      <div class="callout-title">✓ ECR Enhanced Scanning vs. Basic Scanning</div>
+      ECR offers two scanning modes. <strong>Basic scanning</strong> uses an open-source scanner (Clair) on push only. <strong>Enhanced scanning</strong> uses Amazon Inspector and continuously re-scans images when new CVEs are published — so an image that was clean last week can generate a finding today when a new vulnerability is disclosed for one of its packages. Always use enhanced scanning for production ECR repositories.
+    </div>
+    <div class="callout insight">
+      <div class="callout-title">💡 Inspector Risk Score vs. CVSS Score</div>
+      The raw CVSS score is a base score ignoring your environment. Inspector's <strong>Amazon Inspector Risk Score</strong> adjusts this based on: (1) whether public exploit code exists, (2) whether the package is reachable from the network, and (3) whether the instance is internet-facing. A CVSS 7.5 vulnerability on an internet-facing instance with public exploit code can score 9.5 in Inspector.
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">You enabled Inspector v2 three months ago and it showed zero ECR findings. Today it suddenly generates 15 HIGH findings for images you haven't changed. What most likely happened?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">A</span>Inspector malfunctioned — findings for unchanged images indicate a false positive bug</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)"><span class="opt-key">B</span>New CVEs were published for packages in those images. Inspector re-scans all images when new vulnerabilities are disclosed — unchanged images can generate new findings as the CVE database grows</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">C</span>Someone pushed new versions of those images without your knowledge</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">D</span>Inspector only scans images on push — these findings must be from a recent push you missed</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 3 -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-ops">Risk Scoring · Intermediate</div>
+    <h1>CVSS Scoring &<br><em>Prioritisation</em></h1>
+    <p><strong>Objective:</strong> Read and interpret CVSS v3 scores, understand the vector components that matter for cloud workloads, and apply a risk-based prioritisation model to a list of Inspector findings.</p>
+    <p>CVSS (Common Vulnerability Scoring System) scores vulnerabilities from 0–10 using a vector string that encodes attack complexity, privileges required, and impact. The score alone is not enough — you must add environmental context.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">CVSS v3 vector — understanding the components</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre>CVSS:3.1/<span class="hl">AV:N</span>/<span class="hl2">AC:L</span>/<span class="str">PR:N</span>/<span class="key">UI:N</span>/S:U/C:H/I:H/A:H
+        │      │      │      │
+        │      │      │      └── UI:N  No user interaction required
+        │      │      └───────── PR:N  No privileges required (unauthenticated)
+        │      └──────────────── AC:L  Low attack complexity (easy to exploit)
+        └─────────────────────── AV:N  Network-reachable (internet-facing)</pre>
+    </div>
+    <p>For cloud security, the two most important vectors are <strong>AV:N</strong> (network-accessible) and <strong>PR:N</strong> (no privileges required). A remote, unauthenticated exploit on an internet-facing service is almost always your highest priority — regardless of CVSS score.</p>
+    <table class="styled-table">
+      <thead><tr><th>CVSS range</th><th>Severity</th><th>Example</th><th>Priority adjustment</th></tr></thead>
+      <tbody>
+        <tr><td>9.0–10.0</td><td>Critical</td><td>Remote code execution, no auth</td><td>+1 if internet-facing, exploit public</td></tr>
+        <tr><td>7.0–8.9</td><td>High</td><td>Privilege escalation, local access</td><td>+1 if adjacent to critical data</td></tr>
+        <tr><td>4.0–6.9</td><td>Medium</td><td>Information disclosure</td><td>Deprioritise if isolated subnet</td></tr>
+        <tr><td>0.1–3.9</td><td>Low</td><td>DoS, minor config exposure</td><td>Schedule in next sprint</td></tr>
+      </tbody>
+    </table>
+    <div class="callout tip">
+      <div class="callout-title">✓ Use Inspector's "Fix Available" Filter</div>
+      In the Inspector console, always filter by <strong>Fix available: Yes</strong> before prioritising. A critical CVE with no patch available requires a workaround strategy (WAF rule, network isolation), not a standard patch ticket. Findings without available fixes should be tracked separately with compensating control documentation.
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Inspector returns two findings: (A) CVSS 9.8 on an EC2 in an isolated private subnet with no public exploit code, (B) CVSS 7.2 on an internet-facing EC2 with a public Metasploit exploit module available. Which do you patch first?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">A</span>Finding A — CVSS 9.8 is Critical and always takes precedence over High severity findings</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)"><span class="opt-key">B</span>Finding B — internet-facing exposure combined with a public exploit module makes it immediately weaponisable regardless of the lower base CVSS score</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">C</span>Both simultaneously — critical and high severity findings must always be patched in the same window</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">D</span>Finding A first, then B — CVSS scores are the standardised metric and should not be overridden by environmental factors</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 4 -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-ops">Remediation · Intermediate</div>
+    <h1>Patch SLAs &<br><em>Auto-Remediation</em></h1>
+    <p><strong>Objective:</strong> Define enforceable patch SLAs by severity, and automate patch compliance reporting and remediation using AWS Systems Manager Patch Manager.</p>
+    <p>A patch SLA is a contractual commitment: if you find a critical vulnerability, it must be remediated within N hours — no exceptions. Without SLAs, "we'll patch it soon" turns into months of exposure. With SLAs, you have a measurable, auditable commitment you can report to the CISO and customers.</p>
+    <div class="sla-grid">
+      <div class="sla-card"><span class="sla-badge crit">Critical</span><div class="sla-ttl">24h</div><div class="sla-label">CVSS 9.0+ or exploit in wild</div></div>
+      <div class="sla-card"><span class="sla-badge high">High</span><div class="sla-ttl">72h</div><div class="sla-label">CVSS 7.0–8.9, fix available</div></div>
+      <div class="sla-card"><span class="sla-badge med">Medium</span><div class="sla-ttl">30d</div><div class="sla-label">CVSS 4.0–6.9</div></div>
+      <div class="sla-card"><span class="sla-badge low">Low</span><div class="sla-ttl">90d</div><div class="sla-label">CVSS &lt;4.0, no exploit</div></div>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash — SSM Patch Manager: Run patch baseline on all managed instances</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment"># Scan all SSM-managed instances for missing patches</span>
+aws ssm start-associations-once \
+  --association-ids <span class="str">"AWS-RunPatchBaseline"</span>
+
+<span class="comment"># View patch compliance summary (how many instances are non-compliant)</span>
+aws ssm describe-instance-patch-states-for-patch-group \
+  --patch-group <span class="str">"production"</span> \
+  --query <span class="str">"InstancePatchStates[*].{ID:InstanceId,Missing:MissingCount,Critical:CriticalNonCompliantCount}"</span>
+
+<span class="comment"># Install patches on non-compliant instances (requires maintenance window)</span>
+aws ssm send-command \
+  --document-name <span class="str">"AWS-RunPatchBaseline"</span> \
+  --parameters <span class="str">'{"Operation":["Install"]}'</span> \
+  --targets <span class="str">'[{"Key":"tag:Environment","Values":["production"]}]'</span></pre>
+    </div>
+    <div class="callout warning">
+      <div class="callout-title">⚠ Patch Baseline vs. Patch Group</div>
+      A <strong>Patch Baseline</strong> defines which patches are approved (by severity, product, and age). A <strong>Patch Group</strong> tags instances (e.g. <code>Patch Group: production</code>) to receive a specific baseline. Always create separate baselines for production and dev — production may require a 7-day testing delay even for critical patches, while dev can auto-approve immediately.
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Inspector finds a Critical CVE on a production EC2 instance. Your patch SLA requires remediation within 24h, but patching requires a maintenance window that's 3 days away. What's the correct response?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">A</span>Wait for the maintenance window — production changes require formal change control regardless of SLA</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)"><span class="opt-key">B</span>Apply a compensating control immediately (WAF rule blocking exploitation path, network isolation, or security group restriction) and invoke an emergency change to patch within the 24h SLA</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">C</span>Accept the risk formally — 3 days is close enough to the 24h SLA for production systems</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">D</span>Terminate the instance — removing the attack surface is always the fastest remediation</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="next()">Start Lab →</button></div>
+  </div>
+
+  <!-- LAB -->
+  <div class="lesson-pane lab-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-On Lab</div>
+    <h1>EC2 Scan &<br><em>CVE Assessment Report</em></h1>
+    <p>Enable Inspector v2, launch a Free Tier EC2 instance, let Inspector scan it, then produce a prioritised CVE assessment report with remediation recommendations for your portfolio.</p>
+    <div class="callout lab-note"><div class="callout-title">⚡ Cost Note</div>Inspector charges ~$0.0011/instance-hour for EC2 scanning. For this lab (~1 hour) that's under $0.01. Terminate the EC2 and disable Inspector after the lab. The Free Tier t2.micro/t3.micro is sufficient.</div>
+    <div class="lab-steps">
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Enable Inspector v2 <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~5 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Inspector Console → <strong>Get started</strong> → Enable Inspector</li>
+              <li>Enable scan types: <strong>EC2 scanning</strong> + <strong>ECR container image scanning</strong></li>
+              <li>Inspector will immediately start inventorying your account via SSM</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Launch a Scannable EC2 Instance <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>EC2 Console → Launch instance → <strong>Amazon Linux 2023</strong> AMI (t3.micro, Free Tier)</li>
+              <li>Key pair: create or use existing</li>
+              <li>Network settings: use your <code>sec-lab-vpc</code> private subnet from Day 15, attach <code>sg-app</code></li>
+              <li>Advanced → IAM instance profile: attach a role with <code>AmazonSSMManagedInstanceCore</code> policy (required for Inspector agentless scanning)</li>
+              <li>Launch and wait ~5 minutes for SSM to register the instance</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Review Inspector Findings <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Inspector Console → <strong>Findings</strong> → filter by your instance ID</li>
+              <li>Sort by <strong>Inspector Score</strong> descending — review the top 5 findings</li>
+              <li>For each finding, note: CVE ID, package name, installed version, fixed version, Inspector score, and exploit availability</li>
+              <li>Click a finding → review the <strong>Remediation</strong> section for the exact package update command</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">4</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Export Findings & Write CVE Assessment Report <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min</span></div>
+          <div class="step-body">
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash — Export findings via CLI</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre><span class="comment"># Export findings for your instance as JSON</span>
+aws inspector2 list-findings \
+  --filter-criteria <span class="str">'{"resourceId":[{"comparison":"EQUALS","value":"i-YOUR_INSTANCE_ID"}]}'</span> \
+  --query <span class="str">"findings[*].{CVE:packageVulnerabilityDetails.vulnerabilityId,Score:inspectorScore,Severity:severity,Package:packageVulnerabilityDetails.vulnerablePackages[0].name,FixedVersion:packageVulnerabilityDetails.vulnerablePackages[0].fixedInVersion}"</span> \
+  --output table</pre>
+            </div>
+            <p style="margin-top:12px">Create <code>portfolio/week3/day18-cve-assessment-report.md</code> with:</p>
+            <ol>
+              <li>Executive summary: total findings by severity</li>
+              <li>Top 5 prioritised findings table: CVE, score, package, fix, SLA target</li>
+              <li>Remediation recommendations for each</li>
+              <li>Risk acceptance notes for any unfixable findings</li>
+            </ol>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash — Commit report</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre>git add screenshots/day-18-*.png \
+     portfolio/week3/day18-cve-assessment-report.md
+git commit -m <span class="str">"Day 18: Inspector EC2 scan — CVE findings prioritised with SLAs"</span>
+git push</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">5</div></div>
+        <div class="step-content">
+          <div class="step-title">Cleanup <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~5 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Terminate the EC2 instance</li>
+              <li>Inspector Console → Account management → <strong>Disable Inspector</strong></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Lab Checklist</h2>
+    <div class="checklist-progress"><div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div><span class="checklist-progress-label" id="cl-label">0 / 6</span></div>
+    <div class="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">Inspector v2 enabled with EC2 and ECR scanning activated</div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">EC2 instance launched with SSM role; appears in Inspector findings within 15 min</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">Top 5 findings reviewed — CVE ID, Inspector score, fix version noted for each</div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">Findings exported via CLI and saved as JSON evidence</div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">CVE assessment report with prioritised findings table committed to portfolio</div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">EC2 terminated; Inspector disabled (cost control)</div></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="finish()">Complete Day 18 ✓</button></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">🛡️</span>
+      <h1>Day 18 Complete</h1>
+      <p>You can now continuously surface CVEs across your EC2 fleet and ECR images and track them to remediation with defined SLAs. Day 19 goes deeper on containers — ECR image scanning and Fargate runtime security.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 6 complete</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="day-17.html" style="text-decoration:none"><button class="prev-btn">← Day 17</button></a>
+        <a href="day-19.html" style="text-decoration:none"><button class="next-btn">Day 19 →</button></a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const STORAGE_KEY='csm-day18';const TOTAL=5;
+const titles=['Vulnerability Management Fundamentals','How Inspector Works: EC2 & ECR','CVSS Scoring & Prioritisation','Patch SLAs & Auto-Remediation','Hands-on: EC2 Scan & CVE Assessment Report'];
+const fb={
+  0:{good:"Correct. Critical vulnerabilities with available patches bypass standard patch windows. Equifax had 78 days to patch CVE-2017-5638 — the window existed, the patch existed, and the breach still happened. The correct response is immediate exploitability assessment (is this internet-facing? Is exploit code public?) followed by emergency patching within the Critical SLA. Internet-facing instances with public exploits get patched in hours, not weeks.",bad:"Not quite. Standard monthly patch windows exist for predictability, not for security emergencies. A critical CVE with public exploit code can be weaponised in hours — waiting weeks is unacceptable. The Equifax breach is the canonical example. Assess exploitability first (internet-facing + public exploit = immediate priority), then patch within your Critical SLA regardless of the regular window."},
+  1:{good:"Correct. Inspector Enhanced Scanning continuously re-evaluates all enrolled images against the CVE database — not just at push time. When NVD or a vendor advisory publishes a new CVE affecting a package version present in your image, Inspector generates a new finding for that image even if it hasn't been modified. This is a key advantage over basic scanning, which only runs at push. Unchanged images regularly generate new findings as the threat landscape evolves.",bad:"Not quite. Inspector Enhanced Scanning doesn't only scan on push — it re-scans enrolled images continuously against new CVE publications. An image that was clean three months ago will generate new findings when vulnerabilities are disclosed for packages it contains. This is the expected, correct behaviour. The correct response is to review the new CVEs, prioritise, and rebuild/update the affected images."},
+  2:{good:"Correct. CVSS base scores don't capture exploitability in your specific environment. Finding B — CVSS 7.2 on an internet-facing instance with a public Metasploit module — is immediately weaponisable by a script kiddie today. Finding A — CVSS 9.8 in an isolated private subnet with no public exploit — poses significantly lower immediate risk. Environmental factors (exposure, exploit availability) always override base CVSS in prioritisation. This is the foundation of risk-based vulnerability management.",bad:"Not quite. CVSS base scores are environment-agnostic — they describe the worst-case theoretical impact without considering your specific exposure. Finding B is immediately weaponisable by anyone with Metasploit against your internet-facing instance. Finding A, despite the higher score, requires local access and has no public exploit. Real-world risk = CVSS score × exploitability × exposure. Always apply environmental context before prioritising."},
+  3:{good:"Correct. A 24h SLA doesn't mean 'patch within 24h or wait.' It means the vulnerability must be remediated (patch OR effective compensating control) within 24h. Compensating controls — a WAF rule blocking the exploitation URL, a security group change removing internet access, or network isolation — can be applied in minutes and satisfy the SLA requirement while emergency change approval is in progress. Risk acceptance for a critical, exploitable, internet-facing CVE is not appropriate.",bad:"Not quite. Waiting 3 days for a maintenance window violates the 24h Critical SLA and leaves the instance exposed. Risk acceptance for an exploitable internet-facing critical CVE is not defensible. The correct response uses compensating controls (WAF rule, SG restriction, network isolation) to immediately reduce the attack surface within the SLA window, while an emergency change process delivers the actual patch — often within the same 24h period."}
+};
+let state=loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
+function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
+function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/4*100);document.getElementById('score-val').textContent=state.correct.length+' / 4 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked;document.getElementById('pane-complete').classList.add('active');document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
+function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
+function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
+function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
+function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
+function updateChecklist(){const total=6,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
+function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
+function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const opts=document.querySelectorAll('#pane-'+idx+' .kcheck-opt');if(!opts.length)return;opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
+restoreState();
+</script>
+</body>
+</html>

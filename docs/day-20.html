@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 20 — Serverless + EKS Security</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#3ecfcf;--accent-dim:rgba(62,207,207,.08);--amber:#f0924a;--violet:#8a7fff;--danger:#f05a5a;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w3:#3ecfcf;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w3);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)}.tag-warning{color:var(--amber)}.tag-security{color:var(--w3)}.tag-lab{color:var(--lab)}.tag-ops{color:#f0c84a}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}.lab-pane h1 em{color:var(--lab)}
+.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+.compare-card{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.compare-card-head{padding:12px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;display:flex;align-items:center;gap:8px}
+.compare-card.ok .compare-card-head{background:rgba(62,207,207,.08);color:var(--accent)}
+.compare-card.warn .compare-card-head{background:rgba(240,146,74,.08);color:var(--amber)}
+.compare-card-body{padding:14px 16px;font-size:13px;line-height:1.65;color:#8a92a8}
+.compare-card-body strong{color:var(--text);display:block;margin-bottom:4px}
+.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
+.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+.styled-table tr:hover td{background:rgba(255,255,255,.02)}
+.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--w3)}
+.flow-steps{display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:24px 0}
+.flow-step{display:grid;grid-template-columns:28px 1fr;gap:14px;align-items:start;padding:14px 20px;border-bottom:1px solid var(--border)}
+.flow-step:last-child{border-bottom:none}
+.flow-num{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--w3);font-weight:600;padding-top:2px}
+.flow-body{font-size:13.5px;color:var(--text);line-height:1.6}
+.flow-body strong{color:#e0e6f0}
+.flow-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--lab)}
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:#3ecfcf}.code-block pre .hl2{color:var(--amber)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--w3);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
+.kcheck-opt:hover:not(.disabled){border-color:var(--w3);background:rgba(62,207,207,.05);color:var(--text)}
+.kcheck-opt.correct{border-color:var(--accent);background:rgba(62,207,207,.07);color:var(--accent)}
+.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.07);color:var(--danger)}
+.kcheck-opt.reveal-correct{border-color:rgba(62,207,207,.4);background:rgba(62,207,207,.04);color:#5ab8b8}
+.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
+.kcheck-opt.correct .opt-key{background:var(--accent);color:var(--bg)}.kcheck-opt.wrong .opt-key{background:var(--danger);color:#fff}.kcheck-opt.reveal-correct .opt-key{background:rgba(62,207,207,.2);color:var(--w3)}
+.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
+.kcheck-feedback.show{display:block}.kcheck-feedback.good{background:rgba(62,207,207,.08);border:1px solid rgba(62,207,207,.2);color:#7ecece}.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border)}.lab-step:last-child{border-bottom:none}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;position:relative;z-index:1}
+.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}.lab-step:last-child .step-connector{display:none}
+.step-content{flex:1;padding-top:4px}
+.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
+.step-body{font-size:14px;color:var(--text);line-height:1.7}
+.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}.step-body li{color:#a0a8bc}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
+.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
+.check-item:hover{border-color:var(--border-hi)}.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
+.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
+.next-btn{background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px;text-decoration:none}
+.next-btn:hover{opacity:.88}.next-btn.lab-btn{background:var(--lab)}
+.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center}
+.prev-btn:hover{color:var(--text);border-color:var(--text)}
+.completion-card{text-align:center;padding:56px 32px}
+.completion-icon{font-size:48px;margin-bottom:20px;display:block}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
+.completion-card p{color:var(--muted);max-width:420px;margin:0 auto 28px;font-size:14px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(62,207,207,.1);border:1px solid rgba(62,207,207,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.lesson-topbar{padding:14px 24px}.compare-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 3 · Day 20</div>
+    <h2>Serverless +<br>EKS Security</h2>
+    <div class="sidebar-meta"><span class="chip">Lambda</span><span class="chip">EKS</span><span class="chip">IRSA</span><span class="chip">4 lessons</span><span class="chip">1 lab</span></div>
+  </div>
+  <div class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">Lambda Security Model</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(1)"><span class="nav-num">02</span><span class="nav-label">Lambda IAM: Execution Role & Resource Policy</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(2)"><span class="nav-num">03</span><span class="nav-label">EKS Security: RBAC & Pod Identity</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(3)"><span class="nav-num">04</span><span class="nav-label">EKS Pod Security Standards</span><span class="nav-check">✓</span></div>
+    <div class="nav-group-label" style="margin-top:8px">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)"><span class="nav-num" style="color:var(--lab)">🔬</span><span class="nav-label">Hands-on: Secure Lambda + Runtime Checklist</span><span class="nav-check">✓</span></div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+<div class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Day 20 &nbsp;/&nbsp; <span id="topbar-title">Lambda Security Model</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- LESSON 1 -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-security">Serverless Security · Foundational</div>
+    <h1>Lambda<br><em>Security Model</em></h1>
+    <p>Serverless shifts the infrastructure responsibility to AWS — you no longer manage OS patches, runtime environments, or server hardening. But the security model changes too: your attack surface moves from the server to the <strong>function's IAM permissions, environment variables, dependencies, and event triggers</strong>.</p>
+    <p>Lambda functions are ephemeral, isolated execution environments — but they're not inherently safe. A function with overly permissive IAM and a vulnerable dependency is a critical attack vector, even without a server to compromise.</p>
+    <div class="callout breach">
+      <div class="callout-title">⚠ Real Attack — Crypto Mining via Lambda (2022)</div>
+      Attackers gained access to an AWS account and deployed Lambda functions as a crypto mining fleet. The functions had overly broad IAM permissions, no resource-based policies limiting invocation, and no VPC isolation. Because Lambda scales automatically, the attacker ran thousands of concurrent mining functions before the bill spike triggered an alert — 12 hours and $45,000 later. Least-privilege execution roles and concurrency limits would have contained the blast radius.
+    </div>
+    <p>The Lambda threat model has four distinct attack surfaces:</p>
+    <div class="flow-steps">
+      <div class="flow-step"><div class="flow-num">1</div><div class="flow-body"><strong>Event injection</strong> — malicious input in the trigger event (API Gateway, S3, SQS). Validate and sanitise all event data — Lambda receives whatever the trigger sends.</div></div>
+      <div class="flow-step"><div class="flow-num">2</div><div class="flow-body"><strong>Execution role abuse</strong> — overly permissive IAM role exploited after RCE. Every action the role allows is available to attacker code. Apply strict least-privilege.</div></div>
+      <div class="flow-step"><div class="flow-num">3</div><div class="flow-body"><strong>Dependency compromise</strong> — vulnerable or malicious npm/pip packages in the deployment package. Use Inspector Lambda scanning + lock dependency versions.</div></div>
+      <div class="flow-step"><div class="flow-num">4</div><div class="flow-body"><strong>Secrets in environment variables</strong> — hardcoded credentials in Lambda env vars are visible to anyone with <code>lambda:GetFunctionConfiguration</code>. Use Secrets Manager or SSM Parameter Store instead.</div></div>
+    </div>
+    <div class="callout insight">
+      <div class="callout-title">💡 Shared Execution Environment Myth</div>
+      Lambda execution environments are isolated per function and per concurrent invocation — AWS uses micro-VMs (Firecracker) for isolation. However, the <strong>execution role credentials</strong> are shared across all concurrent instances of the same function. A credential compromise affects every concurrent execution, not just one.
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A developer stores a database password in a Lambda environment variable. Another developer with <code>lambda:GetFunctionConfiguration</code> IAM permission opens the Lambda console. Can they see the password?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">A</span>No — Lambda automatically encrypts environment variables and they cannot be retrieved via the console</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)"><span class="opt-key">B</span>Yes — environment variables are visible in plaintext to anyone with lambda:GetFunctionConfiguration permission, making them unsafe for secrets storage</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">C</span>No — only the function's execution role can access environment variables at runtime</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">D</span>Only if the variable name contains the word "SECRET" — Lambda auto-redacts known secret patterns</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" disabled>← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 2 -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-concept">IAM for Lambda · Foundational</div>
+    <h1>Lambda IAM: Execution Role<br><em>& Resource Policy</em></h1>
+    <p><strong>Objective:</strong> Understand Lambda's two IAM controls — the execution role (what the function can do) and the resource-based policy (who can invoke the function) — and write least-privilege versions of each.</p>
+    <div class="compare-grid">
+      <div class="compare-card ok">
+        <div class="compare-card-head">✓ Execution Role</div>
+        <div class="compare-card-body">
+          <strong>Controls what the function can do</strong>
+          Attached to the function. All code running inside the function inherits these permissions. This is the blast radius boundary — limit it ruthlessly.
+          <br><br>Example: <code>s3:GetObject</code> on one specific bucket ARN. Not <code>s3:*</code>. Not <code>*:*</code>.
+        </div>
+      </div>
+      <div class="compare-card warn">
+        <div class="compare-card-head">⚡ Resource Policy</div>
+        <div class="compare-card-body">
+          <strong>Controls who can invoke the function</strong>
+          Like an S3 bucket policy. Defines which AWS services, accounts, or principals are allowed to trigger the function. Without this, any principal with IAM permission can invoke.
+          <br><br>Example: Only allow API Gateway from your account.
+        </div>
+      </div>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">JSON — Least-Privilege Lambda Execution Role</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre>{
+  <span class="key">"Version"</span>: <span class="str">"2012-10-17"</span>,
+  <span class="key">"Statement"</span>: [
+    {
+      <span class="comment">// Only read from one specific S3 bucket</span>
+      <span class="hl">"Effect"</span>: <span class="str">"Allow"</span>,
+      <span class="hl">"Action"</span>: [<span class="str">"s3:GetObject"</span>],
+      <span class="hl">"Resource"</span>: <span class="str">"arn:aws:s3:::my-input-bucket/*"</span>
+    },
+    {
+      <span class="comment">// Only write to one specific DynamoDB table</span>
+      <span class="hl">"Effect"</span>: <span class="str">"Allow"</span>,
+      <span class="hl">"Action"</span>: [<span class="str">"dynamodb:PutItem"</span>, <span class="str">"dynamodb:UpdateItem"</span>],
+      <span class="hl">"Resource"</span>: <span class="str">"arn:aws:dynamodb:us-east-1:123456789:table/OrderResults"</span>
+    },
+    {
+      <span class="comment">// Read one specific secret (not secrets:*)</span>
+      <span class="hl">"Effect"</span>: <span class="str">"Allow"</span>,
+      <span class="hl">"Action"</span>: [<span class="str">"secretsmanager:GetSecretValue"</span>],
+      <span class="hl">"Resource"</span>: <span class="str">"arn:aws:secretsmanager:us-east-1:123456789:secret:db-password-abc123"</span>
+    },
+    {
+      <span class="comment">// CloudWatch Logs — required for all Lambda functions</span>
+      <span class="hl">"Effect"</span>: <span class="str">"Allow"</span>,
+      <span class="hl">"Action"</span>: [<span class="str">"logs:CreateLogGroup"</span>, <span class="str">"logs:CreateLogStream"</span>, <span class="str">"logs:PutLogEvents"</span>],
+      <span class="hl">"Resource"</span>: <span class="str">"arn:aws:logs:*:123456789:log-group:/aws/lambda/my-function:*"</span>
+    }
+  ]
+}</pre>
+    </div>
+    <div class="callout tip">
+      <div class="callout-title">✓ Retrieve Secrets at Runtime, Not Deploy Time</div>
+      Instead of passing secrets as environment variables at deploy time, have the function call <code>secretsmanager:GetSecretValue</code> at runtime. The secret is never stored in the function config, and you can rotate it without redeploying. Cache the secret in memory (not global scope) for the duration of the execution environment's lifetime — typically 15 minutes to a few hours.
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Your Lambda function is triggered only by an S3 event on bucket <code>uploads-bucket</code>. A junior engineer adds <code>lambda:InvokeFunction</code> to an overly broad IAM policy attached to a developer role. What risk does the missing resource policy create?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">A</span>No risk — Lambda functions can only be invoked by the triggers configured in their event source mappings</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)"><span class="opt-key">B</span>Any developer with that role can now directly invoke the function with arbitrary crafted payloads — bypassing the expected S3 event validation and potentially triggering unintended business logic</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">C</span>The resource policy automatically restricts invocation to the configured S3 trigger only</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">D</span>The execution role prevents any damage — even with direct invocation, the function's permissions are unchanged</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 3 -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-ops">Kubernetes Security · Intermediate</div>
+    <h1>EKS Security:<br><em>RBAC & Pod Identity</em></h1>
+    <p><strong>Objective:</strong> Understand Kubernetes RBAC roles, how EKS maps them to IAM via aws-auth, and how IRSA (IAM Roles for Service Accounts) grants AWS API access to pods without static credentials.</p>
+    <p>EKS has two parallel permission systems that must both be configured correctly: <strong>Kubernetes RBAC</strong> (controls what pods and users can do inside the cluster) and <strong>AWS IAM</strong> (controls what the cluster and pods can do in your AWS account). A misconfiguration in either creates a security gap.</p>
+    <table class="styled-table">
+      <thead><tr><th>Layer</th><th>Controls</th><th>Mechanism</th><th>Scope</th></tr></thead>
+      <tbody>
+        <tr><td>K8s RBAC</td><td>Pod/user access to K8s API (secrets, deployments, nodes)</td><td>Role + RoleBinding / ClusterRole + ClusterRoleBinding</td><td>Inside cluster</td></tr>
+        <tr><td>aws-auth ConfigMap</td><td>Maps IAM roles/users to K8s RBAC groups</td><td>ConfigMap in kube-system namespace</td><td>Cluster entry</td></tr>
+        <tr><td>IRSA</td><td>Pod access to AWS APIs (S3, DynamoDB, KMS)</td><td>ServiceAccount annotation + IAM role trust policy</td><td>AWS API calls</td></tr>
+        <tr><td>Node IAM Role</td><td>EC2 node access to AWS APIs (ECR pull, etc.)</td><td>Instance profile on node group</td><td>Node-level AWS</td></tr>
+      </tbody>
+    </table>
+    <div class="callout insight">
+      <div class="callout-title">💡 IRSA — The Right Way to Give Pods AWS Access</div>
+      Before IRSA, pods used the EC2 node's instance profile — meaning every pod on a node shared the same AWS permissions. With IRSA, each pod can have its own fine-grained IAM role via a Kubernetes ServiceAccount annotation. The pod's OIDC token is exchanged for short-lived AWS credentials. This is the mandatory pattern for least-privilege in EKS.
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">yaml — IRSA: ServiceAccount + IAM Role trust policy</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment"># 1. Kubernetes ServiceAccount with IRSA annotation</span>
+<span class="hl">apiVersion</span>: v1
+<span class="hl">kind</span>: ServiceAccount
+<span class="hl">metadata</span>:
+  <span class="hl2">name</span>: s3-reader
+  <span class="hl2">namespace</span>: production
+  <span class="hl2">annotations</span>:
+    <span class="str">eks.amazonaws.com/role-arn</span>: <span class="key">"arn:aws:iam::123456789:role/S3ReaderRole"</span>
+
+<span class="comment">---
+# 2. IAM Role trust policy — only this specific ServiceAccount can assume it</span>
+{
+  <span class="key">"Principal"</span>: {
+    <span class="str">"Federated"</span>: <span class="str">"arn:aws:iam::123456789:oidc-provider/oidc.eks.us-east-1.amazonaws.com/..."</span>
+  },
+  <span class="hl">"Condition"</span>: {
+    <span class="str">"StringEquals"</span>: {
+      <span class="key">"oidc...sub"</span>: <span class="str">"system:serviceaccount:production:s3-reader"</span>
+    }
+  }
+}</pre>
+    </div>
+    <div class="callout warning">
+      <div class="callout-title">⚠ Never Use system:masters in Production</div>
+      The <code>system:masters</code> Kubernetes group grants unrestricted cluster-admin access. Many EKS setup guides add IAM roles to <code>system:masters</code> for convenience during cluster creation — and leave it there. Audit your <code>aws-auth</code> ConfigMap and replace any <code>system:masters</code> bindings with least-privilege RBAC roles before going to production.
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A pod in your EKS cluster needs to read from an S3 bucket. A developer suggests attaching the S3 read policy directly to the EC2 node group's IAM instance profile. Why is this wrong?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">A</span>EC2 instance profiles cannot include S3 permissions — only EKS-specific policies are allowed</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)"><span class="opt-key">B</span>Every pod on every node in the group would inherit the S3 permission — a compromise of any pod gives S3 access. IRSA scopes the permission to one specific ServiceAccount used by one specific workload</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">C</span>Instance profiles don't work inside Kubernetes — pods can't access the EC2 metadata endpoint</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">D</span>It works fine — instance profiles are the recommended pattern for EKS workloads that need AWS API access</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 4 -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-ops">Pod Hardening · Intermediate</div>
+    <h1>EKS Pod<br><em>Security Standards</em></h1>
+    <p><strong>Objective:</strong> Apply Kubernetes Pod Security Standards (PSS) to restrict what pods can do at the runtime level — preventing privilege escalation, host filesystem access, and root execution.</p>
+    <p>Kubernetes replaced the deprecated PodSecurityPolicy with <strong>Pod Security Standards</strong> — three built-in policy levels enforced via namespace labels. They define what security context settings pods are allowed to use.</p>
+    <table class="styled-table">
+      <thead><tr><th>Level</th><th>What it allows</th><th>Use case</th></tr></thead>
+      <tbody>
+        <tr><td>Privileged</td><td>Everything — root, host network, privileged containers</td><td>System/infrastructure pods only (CNI, monitoring agents)</td></tr>
+        <tr><td>Baseline</td><td>Common defaults — no privileged containers, no host PID/network</td><td>General workloads where strict isn't yet feasible</td></tr>
+        <tr><td>Restricted</td><td>Strict — non-root required, read-only root FS, no privilege escalation</td><td>All production application pods</td></tr>
+      </tbody>
+    </table>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">yaml — Enforce Restricted PSS on a namespace + secure pod spec</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment"># Label your production namespace to enforce Restricted PSS</span>
+<span class="hl">apiVersion</span>: v1
+<span class="hl">kind</span>: Namespace
+<span class="hl">metadata</span>:
+  <span class="hl2">name</span>: production
+  <span class="hl2">labels</span>:
+    <span class="str">pod-security.kubernetes.io/enforce</span>: <span class="key">restricted</span>
+    <span class="str">pod-security.kubernetes.io/enforce-version</span>: <span class="key">latest</span>
+    <span class="str">pod-security.kubernetes.io/warn</span>: <span class="key">restricted</span>
+    <span class="str">pod-security.kubernetes.io/audit</span>: <span class="key">restricted</span>
+
+<span class="comment">---
+# Compliant pod securityContext for Restricted PSS</span>
+<span class="hl">securityContext</span>:
+  <span class="hl2">runAsNonRoot</span>: <span class="key">true</span>          <span class="comment"># Never run as root</span>
+  <span class="hl2">runAsUser</span>: <span class="key">1000</span>              <span class="comment"># Specific non-root UID</span>
+  <span class="hl2">readOnlyRootFilesystem</span>: <span class="key">true</span> <span class="comment"># Prevent installing tools</span>
+  <span class="hl2">allowPrivilegeEscalation</span>: <span class="key">false</span>
+  <span class="hl2">seccompProfile</span>:
+    <span class="hl2">type</span>: <span class="key">RuntimeDefault</span>      <span class="comment"># Restrict syscall surface</span>
+  <span class="hl2">capabilities</span>:
+    <span class="hl2">drop</span>: [<span class="key">"ALL"</span>]              <span class="comment"># Drop all Linux capabilities</span></pre>
+    </div>
+    <div class="callout tip">
+      <div class="callout-title">✓ Audit Before Enforce</div>
+      Don't jump straight to <code>enforce: restricted</code> on existing namespaces — pods that don't comply will be rejected and your workloads will break. Start with <code>audit</code> and <code>warn</code> modes for a week to find non-compliant pods, fix their security contexts, then switch to enforce. Use <code>kubectl label namespace production pod-security.kubernetes.io/audit=restricted</code> to start auditing without impact.
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A pod in your production namespace runs as root (<code>runAsUser: 0</code>) with <code>readOnlyRootFilesystem: false</code>. You label the namespace with <code>pod-security.kubernetes.io/enforce: restricted</code>. What happens to this pod?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">A</span>The pod continues running — PSS enforcement only applies to new pod creations, not existing pods</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)"><span class="opt-key">B</span>Existing running pods are unaffected immediately, but any attempt to create or recreate the pod (deployment rollout, crash restart) will be rejected — the pod spec violates Restricted PSS</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">C</span>The pod is immediately terminated — PSS enforcement evicts all non-compliant running pods</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">D</span>The pod runs in a degraded security mode — Kubernetes automatically adjusts the security context to comply</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="next()">Start Lab →</button></div>
+  </div>
+
+  <!-- LAB -->
+  <div class="lesson-pane lab-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-On Lab</div>
+    <h1>Secure Lambda<br><em>+ Runtime Checklist</em></h1>
+    <p>Deploy a security-hardened Lambda function — least-privilege execution role, secrets via Secrets Manager, no environment variable secrets — and complete a runtime security checklist covering both Lambda and EKS patterns for your portfolio.</p>
+    <div class="callout lab-note"><div class="callout-title">⚡ Cost Note</div>Lambda: first 1M requests/month free. Secrets Manager: $0.40/secret/month — delete the secret after the lab. No EKS cluster is required for this lab — the EKS checklist items are documented from theory. EKS clusters cost ~$0.10/hour; skip creation unless you have an existing cluster.</div>
+    <div class="lab-steps">
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Create a Secret in Secrets Manager <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~5 min</span></div>
+          <div class="step-body">
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre>aws secretsmanager create-secret \
+  --name <span class="str">"lab/day20/db-password"</span> \
+  --secret-string <span class="str">'{"username":"admin","password":"SecureLab2025!"}'</span> \
+  --description <span class="str">"Day 20 lab secret — delete after use"</span></pre>
+            </div>
+            <p>Copy the returned secret ARN — you'll use it in the execution role and Lambda code.</p>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Create a Least-Privilege Execution Role <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>IAM Console → Roles → Create role → AWS service → Lambda</li>
+              <li>Create a custom inline policy — paste the execution role JSON from Lesson 2, updating the secret ARN to your <code>lab/day20/db-password</code> ARN</li>
+              <li>Remove the S3 and DynamoDB statements (not needed for this lab — only keep Secrets Manager + CloudWatch Logs)</li>
+              <li>Name the role: <code>LambdaSecureLabRole</code></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Deploy the Hardened Lambda Function <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">python — Lambda function: retrieves secret at runtime, no env var secrets</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre><span class="comment"># lambda_function.py</span>
+<span class="hl">import</span> boto3, json, os
+
+<span class="comment"># Secret ARN from environment variable (not the secret itself)</span>
+SECRET_ARN = os.environ.get(<span class="str">'SECRET_ARN'</span>)
+_cached_secret = <span class="key">None</span>   <span class="comment"># cache within execution environment</span>
+
+<span class="hl">def</span> <span class="hl2">get_secret</span>():
+    <span class="key">global</span> _cached_secret
+    <span class="hl">if</span> _cached_secret:
+        <span class="hl">return</span> _cached_secret
+    client = boto3.client(<span class="str">'secretsmanager'</span>)
+    resp = client.get_secret_value(SecretId=SECRET_ARN)
+    _cached_secret = json.loads(resp[<span class="str">'SecretString'</span>])
+    <span class="hl">return</span> _cached_secret
+
+<span class="hl">def</span> <span class="hl2">lambda_handler</span>(event, context):
+    secret = get_secret()
+    <span class="comment"># Use secret['username'] and secret['password'] — never log them</span>
+    <span class="hl">return</span> {<span class="str">'statusCode'</span>: 200, <span class="str">'body'</span>: <span class="str">'Connected with secure credentials'</span>}</pre>
+            </div>
+            <ol>
+              <li>Lambda Console → Create function → Author from scratch → Python 3.12</li>
+              <li>Execution role → Use existing → <code>LambdaSecureLabRole</code></li>
+              <li>Paste the code above. Set environment variable: <code>SECRET_ARN</code> = your secret ARN (the ARN, not the secret value)</li>
+              <li>No other environment variables — zero secrets stored in config</li>
+              <li>Test the function → verify it returns 200 and CloudTrail shows a <code>GetSecretValue</code> call</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">4</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Complete the Runtime Security Checklist <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min</span></div>
+          <div class="step-body">
+            <p>Create <code>portfolio/week3/day20-runtime-security-checklist.md</code> with two sections — Lambda and EKS — documenting each control, its status, and the evidence or rationale. Use the checklist items below as your structure.</p>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash — Commit all artefacts</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre>git add screenshots/day-20-*.png \
+     portfolio/week3/day20-runtime-security-checklist.md
+git commit -m <span class="str">"Day 20: Secure Lambda (Secrets Manager, least-priv role) + runtime checklist"</span>
+git push</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">5</div></div>
+        <div class="step-content">
+          <div class="step-title">Cleanup <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~5 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Delete the Lambda function</li>
+              <li>Delete <code>LambdaSecureLabRole</code></li>
+              <li><code>aws secretsmanager delete-secret --secret-id lab/day20/db-password --force-delete-without-recovery</code></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Lab Checklist</h2>
+    <div class="checklist-progress"><div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div><span class="checklist-progress-label" id="cl-label">0 / 8</span></div>
+    <div class="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">Secret created in Secrets Manager — no password stored in Lambda environment variables</div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">Execution role <code>LambdaSecureLabRole</code> grants only <code>secretsmanager:GetSecretValue</code> on the specific secret ARN + CloudWatch Logs</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">Lambda function deployed — only <code>SECRET_ARN</code> (not the value) stored in env vars</div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">Test invocation succeeds — CloudTrail shows <code>GetSecretValue</code> call with function's role ARN</div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">Runtime checklist: Lambda section completed (least-priv role, no env secrets, VPC consideration, dependency scanning)</div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">Runtime checklist: EKS section completed (IRSA pattern, no system:masters, PSS namespace labels, non-root pods)</div></div>
+      <div class="check-item" onclick="toggleCheck(this,6)"><div class="check-box">✓</div><div class="check-text">Screenshots committed: Lambda config, execution role policy, CloudTrail GetSecretValue event</div></div>
+      <div class="check-item" onclick="toggleCheck(this,7)"><div class="check-box">✓</div><div class="check-text">All lab resources deleted — Lambda, IAM role, Secrets Manager secret</div></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="finish()">Complete Day 20 ✓</button></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">⚡</span>
+      <h1>Day 20 Complete</h1>
+      <p>You've secured both serverless and Kubernetes workloads with least-privilege IAM and runtime hardening. Tomorrow is Day 21 — the Week 3 portfolio capstone where you tie everything together.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 8 complete</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="day-19.html" style="text-decoration:none"><button class="prev-btn">← Day 19</button></a>
+        <a href="day-21.html" style="text-decoration:none"><button class="next-btn">Day 21 →</button></a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const STORAGE_KEY='csm-day20';const TOTAL=5;
+const titles=['Lambda Security Model','Lambda IAM: Execution Role & Resource Policy','EKS Security: RBAC & Pod Identity','EKS Pod Security Standards','Hands-on: Secure Lambda + Runtime Checklist'];
+const fb={
+  0:{good:"Correct. Lambda environment variables are stored in the function configuration and are visible in plaintext to anyone with lambda:GetFunctionConfiguration permission — which includes the Lambda console. AWS does offer optional encryption using KMS, but even then, any principal with kms:Decrypt and lambda:GetFunctionConfiguration can retrieve the value. Environment variables are fundamentally config storage, not secret storage. Always use Secrets Manager or SSM Parameter Store for credentials.",bad:"Not quite. Lambda environment variables are visible in plaintext in the Lambda console and via the GetFunctionConfiguration API to anyone with that IAM permission. AWS applies encryption at rest by default using the Lambda service key, but the values are transparently decrypted when viewed in the console or returned by the API. There is no automatic redaction. Never store passwords, API keys, or tokens in Lambda environment variables."},
+  1:{good:"Correct. Lambda resource-based policies control who can invoke the function — they're separate from the function's trigger configuration. Without a restricting resource policy, any IAM principal in your account with lambda:InvokeFunction permission can call the function directly with any crafted payload. If your function expects a structured S3 event and a developer sends malformed JSON, they may trigger error paths, expose logic, or — if the function has insufficient input validation — exploit injection vulnerabilities.",bad:"Not quite. Event source mappings only define the automatic polling triggers (SQS, Kinesis, DynamoDB Streams). For push-based triggers (API Gateway, S3, SNS) and direct invocations, IAM permission + resource policy controls access. Any IAM principal with lambda:InvokeFunction can call the function directly — bypassing the expected trigger flow and sending arbitrary payloads. A resource-based policy scoping invocation to specific services is the correct defence."},
+  2:{good:"Correct. EC2 instance profiles apply to the node, not the pod. Every pod scheduled on that node — across all namespaces and workloads — can reach the EC2 metadata endpoint (169.254.169.254) and obtain the node's IAM credentials. A compromised pod in any namespace gains S3 read access. IRSA scopes the AWS permission to a specific Kubernetes ServiceAccount, which is then bound to specific pods — least-privilege at the workload level.",bad:"Not quite. Pods can access the EC2 metadata endpoint and retrieve the node's instance profile credentials by default (unless IMDSv2 + hop limit 1 is enforced, which prevents pods from reaching it). But even with IMDSv2 protection, using the node role for app permissions is architecturally wrong — it grants the same AWS access to every pod on the node. IRSA is the correct pattern: each workload gets its own fine-grained IAM role via ServiceAccount annotation."},
+  3:{good:"Correct. PSS enforcement via namespace labels applies at pod admission — the webhook checks the pod spec when it's submitted to the API server. Running pods are not evicted retroactively (this would cause outages). However, as soon as the deployment controller tries to recreate a pod (due to a rollout, crash loop, or scaling event), the admission webhook will reject the new pod spec. This is why the 'audit then warn then enforce' migration path exists — to catch non-compliant pods before enforce mode stops them from running.",bad:"Not quite. PSS enforcement is applied at pod admission time — when a pod spec is submitted to the API server. Existing running pods are not immediately terminated (that would cause outages). However, non-compliant pods can't be recreated once they stop. Kubernetes does NOT automatically adjust security contexts to comply — it simply rejects the submission. This is exactly why the recommended approach is: audit (log violations) → warn (show warnings) → enforce (block rejections)."}
+};
+let state=loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
+function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
+function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/4*100);document.getElementById('score-val').textContent=state.correct.length+' / 4 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked;document.getElementById('pane-complete').classList.add('active');document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
+function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
+function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
+function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
+function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
+function updateChecklist(){const total=8,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
+function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
+function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const opts=document.querySelectorAll('#pane-'+idx+' .kcheck-opt');if(!opts.length)return;opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
+restoreState();
+</script>
+</body>
+</html>

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 25 — STRIDE Threat Modelling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#f05a5a;--accent-dim:rgba(240,90,90,.08);--amber:#f0924a;--violet:#8a7fff;--danger:#f05a5a;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w4:#f05a5a;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w4);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)}.tag-warning{color:var(--amber)}.tag-security{color:var(--accent)}.tag-lab{color:var(--lab)}.tag-arch{color:#4ab8d4}.tag-detect{color:var(--w4)}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}.lab-pane h1 em{color:var(--lab)}
+.lesson-pane h2{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;color:#e4eaf6;margin:32px 0 14px}
+.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+.lesson-pane ul,ol{padding-left:20px;margin-bottom:18px;color:#a0a8bc;line-height:1.9}
+.lesson-pane li{margin-bottom:4px}
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
+.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+.styled-table tr:hover td{background:rgba(255,255,255,.02)}
+.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--w4)}
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:var(--w4)}.code-block pre .hl2{color:var(--amber)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}
+.stride-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 0}
+.stride-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color .2s}
+.stride-card:hover{border-color:var(--border-hi)}
+.stride-head{padding:12px 16px;display:flex;align-items:center;gap:10px}
+.stride-letter{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;width:28px;flex-shrink:0}
+.stride-name{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text)}
+.stride-prop{font-size:11px;color:var(--muted)}
+.stride-body{padding:0 16px 14px;font-size:13px;color:#8a92a8;line-height:1.6}
+.stride-example{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--pill);padding:4px 8px;border-radius:3px;display:inline-block;margin-top:6px;color:var(--muted)}
+.s-color{color:#f05a5a}.t-color{color:#f0924a}.r-color{color:#f0c84a}.i-color{color:#3ecfcf}.d-color{color:#8a7fff}.e-color{color:#4ab8d4}
+.dfd-block{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:24px 28px;margin:24px 0;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:2.4;color:#6a7490}
+.dfd-block .entity{color:#e4eaf6}.dfd-block .flow{color:var(--faint)}.dfd-block .boundary{color:var(--amber);font-size:10px;letter-spacing:.08em}
+.dfd-block .tb{color:var(--danger)}
+.dread-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+.dread-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surface)}
+.dread-table td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;font-size:13px}
+.dread-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
+.score-hi{color:var(--danger);font-family:'IBM Plex Mono',monospace;font-weight:600}
+.score-med{color:var(--amber);font-family:'IBM Plex Mono',monospace;font-weight:600}
+.score-lo{color:#3ecfcf;font-family:'IBM Plex Mono',monospace;font-weight:600}
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--w4);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{background:var(--surface2);border:1px solid var(--border-hi);border-radius:7px;padding:12px 16px;cursor:pointer;font-size:13.5px;color:#9aa3ba;line-height:1.5;text-align:left;transition:all .15s}
+.kcheck-opt:hover:not(.disabled){border-color:var(--w4);color:var(--text);background:rgba(240,90,90,.06)}
+.kcheck-opt.correct{border-color:#3ecfcf;background:rgba(62,207,207,.08);color:#3ecfcf}
+.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.08);color:var(--danger)}
+.kcheck-opt.reveal-correct{border-color:#3ecfcf;background:rgba(62,207,207,.06);color:#3ecfcf;opacity:.7}
+.kcheck-opt.disabled{cursor:default}
+.kcheck-feedback{font-size:13px;line-height:1.6;padding:12px 14px;border-radius:6px;margin-top:12px;display:none}
+.kcheck-feedback.show{display:block}
+.kcheck-feedback.good{background:rgba(62,207,207,.08);color:#3ecfcf;border:1px solid rgba(62,207,207,.2)}
+.kcheck-feedback.bad{background:rgba(240,90,90,.07);color:#f08080;border:1px solid rgba(240,90,90,.2)}
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;position:relative}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--lab-dim);border:1px solid rgba(240,200,74,.3);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--lab);flex-shrink:0}
+.step-connector{width:1px;background:var(--border);flex:1;margin:4px 0;min-height:24px}
+.step-content{flex:1;padding-bottom:32px}
+.step-title{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--text);margin-bottom:12px;letter-spacing:.02em}
+.step-body{font-size:14px;color:#9aa3ba;line-height:1.7}
+.step-body ol,.step-body ul{padding-left:18px;margin:8px 0}
+.step-body li{margin-bottom:6px}
+.step-body p{margin-bottom:12px}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:#c8d0e0}
+.checklist{display:flex;flex-direction:column;gap:8px;margin:20px 0 32px}
+.check-item{display:flex;align-items:flex-start;gap:14px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:border-color .15s}
+.check-item:hover{border-color:var(--border-hi)}
+.check-item.checked{border-color:rgba(240,200,74,.3);background:var(--lab-dim)}
+.check-box{width:18px;height:18px;border-radius:4px;border:1px solid var(--border-hi);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;transition:all .2s}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#9aa3ba;line-height:1.5}
+.check-text code{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:var(--pill);padding:1px 5px;border-radius:3px;color:#c8d0e0}
+.checklist-progress{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease;width:0%}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+.lesson-nav-footer{display:flex;gap:12px;margin-top:40px;padding-top:28px;border-top:1px solid var(--border)}
+.prev-btn,.next-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;padding:10px 22px;border-radius:6px;cursor:pointer;transition:all .15s}
+.prev-btn{background:transparent;border:1px solid var(--border-hi);color:var(--muted)}.prev-btn:hover{color:var(--text);border-color:var(--text)}
+.next-btn{background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:600}.next-btn:hover{opacity:.85}
+.lab-btn{background:var(--lab);border-color:var(--lab);color:#0d0f14}
+.completion-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:48px;text-align:center;max-width:520px;margin:0 auto}
+.completion-icon{font-size:48px;display:block;margin-bottom:20px}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;color:#e8eef8;margin-bottom:14px}
+.completion-card p{font-size:14px;color:#6a7490;line-height:1.7;margin-bottom:24px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,90,90,.1);border:1px solid rgba(240,90,90,.2);border-radius:20px;padding:7px 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--w4)}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:var(--lab-dim);border:1px solid rgba(240,200,74,.2);border-radius:20px;padding:7px 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--lab)}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 20px 60px}.lesson-topbar{padding:14px 20px}.stride-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 4 · Day 25</div>
+    <h2>STRIDE Threat Modelling</h2>
+    <div class="sidebar-meta"><span class="chip">Advanced</span><span class="chip">4 hours</span><span class="chip">STRIDE</span></div>
+  </div>
+  <nav class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">1</span><span class="nav-label">Why Threat Modelling</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(1)"><span class="nav-num">2</span><span class="nav-label">STRIDE: Six Threat Categories</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(2)"><span class="nav-num">3</span><span class="nav-label">Data Flow Diagrams & Trust Boundaries</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(3)"><span class="nav-num">4</span><span class="nav-label">DREAD Scoring & Prioritisation</span><span class="nav-check">✓</span></div>
+    <div class="nav-group-label">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)"><span class="nav-num">5</span><span class="nav-label">Hands-on: Build Your Threat Model</span><span class="nav-check">✓</span></div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Day progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</aside>
+<main class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Week 4 &nbsp;/&nbsp; <span id="topbar-title">Why Threat Modelling</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- PANE 0 — Why Threat Modelling -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-detect">🎯 Strategy</div>
+    <h1>Why <em>Threat Modelling</em></h1>
+    <p>Security controls without threat modelling are answers to unasked questions. You might implement perfect encryption but have no protection against an insider threat. You might have excellent network segmentation but leave an identity path wide open.</p>
+    <p><strong>Threat modelling</strong> is the structured practice of asking "what can go wrong?" before it goes wrong — for a specific system, from the perspective of an attacker. Done before controls are built, it tells you <em>what</em> to build and <em>why</em>. Done after, it finds the gaps.</p>
+
+    <h2>The Four Questions</h2>
+    <table class="styled-table">
+      <thead><tr><th>#</th><th>Question</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>What are we building?</td><td>Data flow diagram — components, flows, trust boundaries</td></tr>
+        <tr><td>2</td><td>What can go wrong?</td><td>Threat enumeration using STRIDE</td></tr>
+        <tr><td>3</td><td>What are we doing about it?</td><td>Control mapping — each threat paired with its mitigation</td></tr>
+        <tr><td>4</td><td>Did we do a good enough job?</td><td>Residual risk register — gaps accepted or scheduled for remediation</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout insight">
+      <div class="callout-title">💡 The Most Valuable Output</div>
+      The document threat modelling produces is useful — but the most valuable output is the <em>conversation</em>. A developer who has walked through the STRIDE threats on their own feature will write different code than one who hasn't. A security engineer who has modelled a system will ask different questions during a design review. The process changes how people think, not just what they document.
+    </div>
+
+    <h2>When to Threat Model</h2>
+    <ul>
+      <li>When designing a new service or significant new feature</li>
+      <li>When adding a new data flow across a trust boundary</li>
+      <li>After a security incident — to understand what the model missed</li>
+      <li>Annually for your most critical services (things change)</li>
+    </ul>
+
+    <div class="callout warning">
+      <div class="callout-title">⚠️ Common Mistake — Threat Modelling Too Late</div>
+      Threat modelling done after a system is built is harder and more expensive. You're adding controls to an existing architecture rather than designing security in. Some threats can only be addressed by architectural changes — which are much cheaper to make on a whiteboard than in production.
+    </div>
+
+    <div class="kcheck" id="pane-0-quiz">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Your team is designing a new Lambda function that reads from an S3 bucket and writes results to DynamoDB. A senior engineer says "we already have Config and GuardDuty — we don't need to threat model this." What is the most important thing threat modelling would add that Config and GuardDuty cannot provide?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)">Real-time detection of misconfiguration in the Lambda's IAM role.</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)">Automated remediation if the Lambda function is exploited.</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)">Proactive identification of attack paths before the function is deployed — including threats Config and GuardDuty have no rules to detect.</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)">A compliance score showing whether the Lambda meets CIS benchmark controls.</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()" disabled>← Previous</button><button class="next-btn" onclick="next()">Next →</button></div>
+  </div>
+
+  <!-- PANE 1 — STRIDE -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-security">🔐 Framework</div>
+    <h1><em>STRIDE</em>: Six Threat Categories</h1>
+    <p>STRIDE is a mnemonic for six categories of threat, developed at Microsoft and widely adopted across the industry. Each category maps to a security property being violated. For every component and data flow in your architecture, you ask: which of these six threats applies here?</p>
+
+    <div class="stride-grid">
+      <div class="stride-card">
+        <div class="stride-head"><span class="stride-letter s-color">S</span><div><div class="stride-name">Spoofing</div><div class="stride-prop">Violates: Authentication</div></div></div>
+        <div class="stride-body">Attacker impersonates a legitimate identity — user, service, or system.<div class="stride-example">Stolen IAM credentials used to impersonate a developer role</div></div>
+      </div>
+      <div class="stride-card">
+        <div class="stride-head"><span class="stride-letter t-color">T</span><div><div class="stride-name">Tampering</div><div class="stride-prop">Violates: Integrity</div></div></div>
+        <div class="stride-body">Attacker modifies data in transit or at rest without authorisation.<div class="stride-example">S3 object modified without CloudTrail data event logging</div></div>
+      </div>
+      <div class="stride-card">
+        <div class="stride-head"><span class="stride-letter r-color">R</span><div><div class="stride-name">Repudiation</div><div class="stride-prop">Violates: Non-repudiation</div></div></div>
+        <div class="stride-body">Attacker performs actions and then denies them — or erases the evidence.<div class="stride-example">CloudTrail logging disabled to cover tracks after IAM changes</div></div>
+      </div>
+      <div class="stride-card">
+        <div class="stride-head"><span class="stride-letter i-color">I</span><div><div class="stride-name">Information Disclosure</div><div class="stride-prop">Violates: Confidentiality</div></div></div>
+        <div class="stride-body">Sensitive data exposed to unauthorised parties.<div class="stride-example">Public S3 bucket exposes customer PII</div></div>
+      </div>
+      <div class="stride-card">
+        <div class="stride-head"><span class="stride-letter d-color">D</span><div><div class="stride-name">Denial of Service</div><div class="stride-prop">Violates: Availability</div></div></div>
+        <div class="stride-body">Attacker disrupts a service, making it unavailable to legitimate users.<div class="stride-example">API Gateway flooded — Lambda concurrency limit hit, legitimate requests rejected</div></div>
+      </div>
+      <div class="stride-card">
+        <div class="stride-head"><span class="stride-letter e-color">E</span><div><div class="stride-name">Elevation of Privilege</div><div class="stride-prop">Violates: Authorisation</div></div></div>
+        <div class="stride-body">Attacker gains permissions beyond what they should have.<div class="stride-example">Lambda execution role has <code>iam:*</code> — attacker uses it to create an admin user</div></div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">💡 Where Threats Concentrate</div>
+      Not every STRIDE category applies to every component equally. <strong>Trust boundary crossings</strong> — the points where data flows from one zone of trust to another — are where the majority of threats concentrate. An attacker crossing from the internet to your application tier, or from the application tier to your database, is where Spoofing, Tampering, and Information Disclosure threats are most relevant.
+    </div>
+
+    <div class="kcheck" id="pane-1-quiz">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A developer accidentally commits AWS credentials to a public GitHub repository. An attacker finds them and uses them to call <code>s3:GetObject</code> on your customer data bucket. Which STRIDE categories does this incident involve? (Pick the most complete answer.)</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)">Tampering only — the attacker modified your data access patterns.</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)">Denial of Service — the attacker consumed your S3 API quota.</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)">Spoofing (attacker impersonates the developer's identity) and Information Disclosure (customer data read without authorisation).</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)">Elevation of Privilege only — the attacker gained access they shouldn't have.</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next →</button></div>
+  </div>
+
+  <!-- PANE 2 — DFDs -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-arch">🗺 Architecture</div>
+    <h1>Data Flow Diagrams<br>&amp; <em>Trust Boundaries</em></h1>
+    <p>Before applying STRIDE, you need a <strong>Data Flow Diagram (DFD)</strong> — a map of your system that shows where data comes from, where it goes, and which zones of trust it crosses. Without a DFD you'll miss threats, because threats live in the flows, not just the components.</p>
+
+    <h2>DFD Elements</h2>
+    <table class="styled-table">
+      <thead><tr><th>Element</th><th>What it represents</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>External Entity</td><td>Something outside your system that interacts with it</td><td>Internet user, third-party API, another AWS account</td></tr>
+        <tr><td>Process</td><td>A component that transforms or processes data</td><td>Lambda function, EC2 app server, ECS task</td></tr>
+        <tr><td>Data Store</td><td>Where data is persisted</td><td>S3 bucket, RDS database, DynamoDB table, Secrets Manager</td></tr>
+        <tr><td>Data Flow</td><td>How data moves between elements</td><td>HTTPS request, S3 PutObject, DynamoDB query</td></tr>
+        <tr><td>Trust Boundary</td><td>Line separating zones of different trust</td><td>Internet / VPC, public subnet / private subnet, AWS account boundary</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Your Lab Architecture as a DFD</h2>
+    <div class="dfd-block">
+<span class="entity">[Internet User]</span> <span class="flow">──HTTPS──▶</span> <span class="entity">[ALB — Public Subnet]</span><br>
+<span class="tb">━━━━━━━━━━ TRUST BOUNDARY: Internet / Public Subnet ━━━━━━━━━━</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="flow">──port 8080──▶</span> <span class="entity">[App Server — Private Subnet]</span><br>
+<span class="tb">━━━━━━━━━━ TRUST BOUNDARY: Public / Private Subnet ━━━━━━━━━━━</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="entity">[App Server]</span> <span class="flow">──port 5432──▶</span> <span class="entity">[RDS — DB Subnet]</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="entity">[App Server]</span> <span class="flow">──HTTPS──▶</span> <span class="entity">[S3 Bucket]</span> <span class="flow">(via VPC endpoint / internet)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="entity">[App Server]</span> <span class="flow">──HTTPS──▶</span> <span class="entity">[Secrets Manager]</span><br>
+<span class="tb">━━━━━━━━━━ TRUST BOUNDARY: VPC / AWS Service APIs ━━━━━━━━━━━</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="entity">[Lambda]</span> <span class="flow">──triggered by──▶</span> <span class="entity">[EventBridge]</span> <span class="flow">──▶</span> <span class="entity">[S3 remediation]</span>
+    </div>
+
+    <div class="callout insight">
+      <div class="callout-title">💡 Every Trust Boundary is a STRIDE Battleground</div>
+      For every arrow that crosses a trust boundary line, ask all six STRIDE questions. An HTTP request crossing the internet/VPC boundary: can it be spoofed? can the data be tampered with? can it disclose information? can it be used for DoS? Trust boundaries are where authentication, encryption, input validation, and rate limiting decisions live.
+    </div>
+
+    <div class="kcheck" id="pane-2-quiz">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Your DFD shows a data flow from the App Server (private subnet) to Secrets Manager (AWS API). The App Server fetches the database password at startup. Which STRIDE threat is most relevant for this specific flow, and what control addresses it?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)">Denial of Service — the app could call Secrets Manager too frequently and hit rate limits. Control: exponential backoff.</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)">Information Disclosure — if the execution role is over-privileged, a compromised app server could read secrets it shouldn't access. Control: IAM least-privilege role scoped to only the specific secret ARN.</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)">Tampering — an attacker could modify the secret value in transit. Control: TLS encryption (already provided by the Secrets Manager API).</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)">Spoofing — Secrets Manager cannot verify the caller's identity. Control: VPC endpoint policy.</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next →</button></div>
+  </div>
+
+  <!-- PANE 3 — DREAD -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-concept">📊 Prioritisation</div>
+    <h1>DREAD Scoring<br>&amp; <em>Prioritisation</em></h1>
+    <p>STRIDE tells you <em>what kind</em> of threat exists. DREAD tells you <em>how worried to be</em>. Once you've enumerated threats across your DFD, you need to prioritise — not everything can be fixed this sprint.</p>
+
+    <h2>The DREAD Dimensions</h2>
+    <p>Score each dimension from <strong>1 (low)</strong> to <strong>3 (high)</strong>:</p>
+    <table class="dread-table">
+      <thead><tr><th>Letter</th><th>Dimension</th><th>Score 1</th><th>Score 2</th><th>Score 3</th></tr></thead>
+      <tbody>
+        <tr><td>D</td><td>Damage</td><td>Minor disruption</td><td>Significant data loss</td><td>Complete system compromise</td></tr>
+        <tr><td>R</td><td>Reproducibility</td><td>Rare conditions required</td><td>Repeatable with effort</td><td>Trivially reproducible</td></tr>
+        <tr><td>E</td><td>Exploitability</td><td>Requires expert skill</td><td>Moderate skill needed</td><td>Script-kiddie level</td></tr>
+        <tr><td>A</td><td>Affected Users</td><td>Single user / resource</td><td>Subset of users</td><td>All users / entire system</td></tr>
+        <tr><td>D</td><td>Discoverability</td><td>Requires deep access to find</td><td>Public tools can find it</td><td>Documented / obvious</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Total score (5–15):</strong> <span class="score-hi">12–15 = Critical</span> &nbsp; <span class="score-med">8–11 = High</span> &nbsp; <span class="score-lo">5–7 = Medium</span></p>
+
+    <h2>Example: Public S3 Bucket with PII</h2>
+    <table class="dread-table">
+      <thead><tr><th>Dimension</th><th>Score</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td>Damage</td><td>3</td><td>Regulatory fines + customer PII exposed = severe business impact</td></tr>
+        <tr><td>Reproducibility</td><td>3</td><td>Any internet user can access the URL — perfectly reproducible</td></tr>
+        <tr><td>Exploitability</td><td>3</td><td>No skill required — a web browser is sufficient</td></tr>
+        <tr><td>Affected Users</td><td>3</td><td>All customers whose data is in the bucket</td></tr>
+        <tr><td>Discoverability</td><td>3</td><td>Public S3 buckets are indexed by search engines and scanning tools</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Total: <span class="score-hi">15 / 15 — Critical.</span></strong> This is why public S3 buckets trigger your highest-priority automated remediation.</p>
+
+    <div class="callout warning">
+      <div class="callout-title">⚠️ DREAD is Subjective</div>
+      Different people score the same threat differently — especially Discoverability and Exploitability. The value of DREAD isn't mathematical precision; it's that the scoring process forces an explicit conversation about risk. "I think this is a 3, you think it's a 1 — let's discuss why" is more valuable than the number itself.
+    </div>
+
+    <div class="kcheck" id="pane-3-quiz">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">You identify an Elevation of Privilege threat: the Lambda execution role has <code>iam:CreateUser</code> and <code>iam:AttachUserPolicy</code>. If exploited, an attacker could create a persistent admin backdoor. You score it: D=3, R=2, E=2, A=3, D=1. Total = 11 (High). Your manager argues it should be lower because "the Lambda has never been exploited." What is the problem with this reasoning?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)">The manager is correct — historical safety is the best indicator of future risk.</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)">The DREAD score is too low — it should always be Critical for IAM threats.</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)">DREAD scores measure the threat's potential, not its historical frequency. "Never been exploited" reflects past attacker choices, not the vulnerability's severity — which remains unchanged.</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)">The Discoverability score of 1 is incorrect — all IAM misconfigurations are trivially discoverable.</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next →</button></div>
+  </div>
+
+  <!-- PANE 4 — Lab -->
+  <div class="lesson-pane lab-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-on Lab</div>
+    <h1>Build Your<br><em>Threat Model</em></h1>
+    <p>Apply STRIDE to the architecture you've built over 4 weeks. Produce a threat model document that maps every major trust boundary crossing to its threats, controls, and residual risk.</p>
+    <div class="callout lab-note"><div class="callout-title">⚡ No AWS Cost</div>No AWS resources are created today. Threat modelling is a documentation exercise — the only tool you need is a text editor (and optionally draw.io or OWASP Threat Dragon for the DFD).</div>
+    <div class="lab-steps">
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Draw Your Data Flow Diagram <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~20 min</span></div>
+          <div class="step-body">
+            <p>Use <a href="https://app.diagrams.net" target="_blank" style="color:var(--accent)">draw.io</a> (free, no signup) or OWASP <a href="https://www.threatdragon.com" target="_blank" style="color:var(--accent)">Threat Dragon</a> to draw your architecture DFD. At minimum include:</p>
+            <ul>
+              <li>External entities: Internet user, AWS APIs</li>
+              <li>Processes: ALB, App Server / Lambda, SOAR Lambda</li>
+              <li>Data stores: S3, RDS/DynamoDB, Secrets Manager</li>
+              <li>Data flows with labels (HTTPS, port 5432, S3 PutObject, etc.)</li>
+              <li>Trust boundary lines: Internet/VPC, Public/Private subnet, VPC/AWS APIs</li>
+            </ul>
+            <p>Export as PNG and save to <code>portfolio/week-4/threat-model-dfd.png</code></p>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Apply STRIDE to 3 Trust Boundaries <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~25 min</span></div>
+          <div class="step-body">
+            <p>Create <code>portfolio/week-4/threat-model.md</code>. For each of the 3 trust boundaries below, complete the STRIDE table:</p>
+            <div class="code-block"><div class="code-header"><span class="code-lang">markdown template</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div><pre><span class="comment">## Trust Boundary: Internet → Public Subnet (ALB)</span>
+
+<span class="key">| Threat | Description | Severity | Control | Residual Risk |</span>
+<span class="key">|--------|-------------|----------|---------|---------------|</span>
+| Spoofing | Attacker forges requests as legitimate user | HIGH | TLS + WAF | LOW |
+| Tampering | Request modified in transit | HIGH | TLS in transit | LOW |
+| Repudiation | User denies actions | MEDIUM | ALB access logs + CloudTrail | LOW |
+| Info Disclosure | Sensitive data in response | HIGH | TLS, no PII in LB responses | LOW |
+| Denial of Service | HTTP flood | MEDIUM | AWS Shield Standard | MEDIUM — no WAF |
+| EoP | Exploit LB to reach private subnet | HIGH | Security groups | LOW |</pre></div>
+            <p>Repeat for: <strong>Public Subnet → Private Subnet (App Server)</strong> and <strong>App Server → S3 (AWS API)</strong>.</p>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Build the Controls Coverage Map <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <p>Add a summary section mapping each STRIDE category to the controls you've built across all 4 weeks:</p>
+            <div class="code-block"><div class="code-header"><span class="code-lang">markdown</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div><pre><span class="comment">## Controls Coverage Map</span>
+
+<span class="key">| STRIDE Category | Primary Control (Week) | Secondary Control |</span>
+<span class="key">|----------------|----------------------|------------------|</span>
+| Spoofing | MFA + JIT roles (Week 2) | GuardDuty credential findings |
+| Tampering | KMS encryption + S3 versioning (Week 3) | CloudTrail integrity validation |
+| Repudiation | CloudTrail multi-region (Week 1) | Log file validation |
+| Info Disclosure | Macie + S3 block public access (Week 3) | Access Analyzer |
+| Denial of Service | AWS Shield Standard | (WAF — gap) |
+| Elevation of Privilege | IAM least-privilege + SCPs (Wk 1&2) | Security Hub Config rules |</pre></div>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">4</div></div>
+        <div class="step-content">
+          <div class="step-title">Identify Top 3 Residual Risks &amp; Commit <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~5 min</span></div>
+          <div class="step-body">
+            <p>Close the document with the 3 threats your current controls do <em>not</em> fully address — with a recommended action for each:</p>
+            <div class="code-block"><div class="code-header"><span class="code-lang">markdown example</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div><pre><span class="comment">## Top 3 Residual Risks</span>
+
+<span class="hl">1. Stolen IAM credentials from unusual geography</span>
+   Current: GuardDuty detects post-compromise — no prevention
+   Fix: IP-based condition on sensitive IAM roles
+   Priority: HIGH
+
+<span class="hl">2. No WAF on public endpoints</span>
+   Current: App-layer attacks (SQLi, XSS) undetected
+   Fix: AWS WAF with managed rule groups
+   Priority: MEDIUM
+
+<span class="hl">3. No internal TLS between app tier and database</span>
+   Current: DB traffic within VPC is unencrypted
+   Fix: RDS with SSL enforcement
+   Priority: MEDIUM</pre></div>
+            <div class="code-block"><div class="code-header"><span class="code-lang">bash — commit</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div><pre>git add portfolio/week-4/threat-model.md portfolio/week-4/threat-model-dfd.png
+git commit -m <span class="str">"Day 25: STRIDE threat model — 3 boundaries, controls coverage map, residual risks"</span>
+git push</pre></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Lab Checklist</h2>
+    <div class="checklist-progress"><div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div><span class="checklist-progress-label" id="cl-label">0 / 6</span></div>
+    <div class="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">Data flow diagram created with all components, flows, and trust boundary lines — exported to <code>portfolio/week-4/threat-model-dfd.png</code></div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">STRIDE analysis completed for Trust Boundary 1: Internet → Public Subnet (ALB)</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">STRIDE analysis completed for Trust Boundary 2: Public Subnet → Private Subnet (App Server)</div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">STRIDE analysis completed for Trust Boundary 3: App Server → S3 / AWS APIs</div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">Controls Coverage Map completed — all 6 STRIDE categories mapped to controls from Weeks 1–4</div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">Top 3 residual risks identified with recommended actions — <code>portfolio/week-4/threat-model.md</code> committed</div></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="finish()">Complete Day 25 ✓</button></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">🗺️</span>
+      <h1>Day 25 Complete</h1>
+      <p>You can now explain <em>why</em> every control you've built exists and which attacker behaviour it defeats. That reasoning is what separates a practitioner from someone who followed a checklist. Tomorrow: Lambda SOAR — automating remediation so detection becomes response in under 30 seconds.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 6 complete</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="day-24.html" style="text-decoration:none"><button class="prev-btn">← Day 24</button></a>
+        <a href="day-26.html" style="text-decoration:none"><button class="next-btn">Day 26 →</button></a>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+<script>
+const STORAGE_KEY='csm-day25';const TOTAL=5;
+const titles=['Why Threat Modelling','STRIDE: Six Threat Categories','Data Flow Diagrams & Trust Boundaries','DREAD Scoring & Prioritisation','Hands-on: Build Your Threat Model'];
+const fb={
+  0:{good:"Correct. Config rules detect known misconfigurations after deployment — they fire when a resource deviates from a known-good state. GuardDuty detects known attack patterns after they occur. Neither service can identify novel attack paths specific to your architecture before they're exploited. Threat modelling is proactive: it finds the attack path where the Lambda role could be abused to exfiltrate the DynamoDB data, before the Lambda exists. That's a structural difference in timing and coverage.",bad:"Not quite. Config does detect IAM misconfigurations — but only against rules you've enabled, and only after the Lambda is deployed. GuardDuty detects attack patterns, but only post-incident. The key word in the question is 'before' — threat modelling is the only approach that proactively identifies attack paths before a component is built. It also finds threats that no existing Config rule or GuardDuty finding type covers."},
+  1:{good:"Correct. This incident involves two STRIDE categories: Spoofing (the attacker uses stolen credentials to impersonate the developer — acting as an identity they're not) and Information Disclosure (customer data is read without authorisation — confidentiality violated). The threat model should have flagged this data flow as a Spoofing risk and recommended controls: credential rotation detection, MFA enforcement on sensitive API calls, and a CloudTrail alert for GetObject calls from unusual source IPs.",bad:"Not quite. This incident primarily involves Spoofing and Information Disclosure. Spoofing: the attacker is impersonating the developer by using their credentials — they are presenting a false identity to the AWS API. Information Disclosure: customer data was read without authorisation — confidentiality was violated. Tampering would apply if data was modified. Elevation of Privilege would apply if the attacker gained permissions beyond what the credentials granted. DoS would apply if availability was disrupted."},
+  2:{good:"Correct. The most relevant threat for this specific flow is Information Disclosure. If the execution role has <code>secretsmanager:GetSecretValue</code> on <code>*</code> instead of on the specific secret ARN, then any code running in the Lambda context — including injected malicious code — could read every secret in the account. The control is least-privilege scoping: the role should only grant access to exactly the secret(s) this Lambda needs, identified by ARN. TLS is already provided by the Secrets Manager API so tampering is addressed. The IAM role is authenticated to Secrets Manager via SigV4 so spoofing is addressed.",bad:"Not quite. TLS is already enforced by the Secrets Manager HTTPS API, so tampering in transit is addressed. The Secrets Manager API authenticates callers via SigV4 signing with the execution role credentials, so Secrets Manager absolutely can verify the caller's identity — spoofing is addressed. The most relevant threat here is Information Disclosure: an overly-broad execution role (GetSecretValue on *) means a compromised Lambda function could read every secret in the account. The fix is scoping the role to the specific secret ARN."},
+  3:{good:"Correct. DREAD scoring measures the inherent potential of a threat — the damage it could cause, how easy it is to exploit, how many users it affects. 'It has never been exploited' is a statement about historical attacker behaviour and choices, not about the vulnerability itself. The IAM misconfiguration exists regardless of exploitation history. A critical vulnerability that has never been exploited is still critical — it just hasn't been found by the right attacker yet. Historical safety is the weakest possible argument against fixing a security gap.",bad:"Not quite. The manager's reasoning is a classic security fallacy — 'security through obscurity' or 'security through historical non-exploitation.' DREAD scores measure the potential of a threat: what damage could it do, how easy would it be to exploit. 'Never been exploited' doesn't change any of those dimensions. A door without a lock that has never been tested by a burglar is still unlocked. The correct response is: the DREAD score is independent of exploitation history, and the High rating stands — the control gap (iam:CreateUser on a Lambda role) should be fixed."}
+};
+let state=loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
+function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
+function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/4*100);document.getElementById('score-val').textContent=state.correct.length+' / 4 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked;document.getElementById('pane-complete').classList.add('active');document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
+function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
+function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
+function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
+function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
+function updateChecklist(){const total=6,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
+function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
+function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const opts=document.querySelectorAll('#pane-'+idx+' .kcheck-opt');if(!opts.length)return;opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
+restoreState();
+</script>
+</body>
+</html>

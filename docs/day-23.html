@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 23 — GuardDuty Threat Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#f05a5a;--accent-dim:rgba(240,90,90,.08);--amber:#f0924a;--violet:#8a7fff;--green:#4af0c4;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w4:#f05a5a;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w4);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)}.tag-ops{color:var(--amber)}.tag-security{color:var(--w4)}.tag-lab{color:var(--lab)}.tag-threat{color:var(--accent)}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}
+.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--accent);background:var(--accent-dim)}.callout.breach .callout-title{color:var(--accent)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--green);background:rgba(74,240,196,.06)}.callout.tip .callout-title{color:var(--green)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
+.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+.styled-table tr:hover td{background:rgba(255,255,255,.02)}
+.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--w4)}
+.finding-card{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:16px 0}
+.finding-header{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface)}
+.finding-type{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#e4eaf6}
+.sev-badge{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;padding:3px 9px;border-radius:3px}
+.sev-critical{background:rgba(240,90,90,.2);color:var(--accent)}
+.sev-high{background:rgba(240,146,74,.2);color:var(--amber)}
+.sev-medium{background:rgba(138,127,255,.2);color:var(--violet)}
+.finding-body{padding:14px 18px;font-size:13.5px;color:#8a92a8;line-height:1.65}
+.finding-body strong{color:var(--text);display:block;margin-bottom:4px}
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:#f05a5a}.code-block pre .hl2{color:var(--amber)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--w4);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
+.kcheck-opt:hover:not(.disabled){border-color:var(--w4);background:rgba(240,90,90,.05);color:var(--text)}
+.kcheck-opt.correct{border-color:var(--green);background:rgba(74,240,196,.07);color:var(--green)}
+.kcheck-opt.wrong{border-color:var(--accent);background:rgba(240,90,90,.07);color:var(--accent)}
+.kcheck-opt.reveal-correct{border-color:rgba(74,240,196,.4);background:rgba(74,240,196,.04);color:#3ab89a}
+.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
+.kcheck-opt.correct .opt-key{background:var(--green);color:var(--bg)}.kcheck-opt.wrong .opt-key{background:var(--accent);color:#fff}.kcheck-opt.reveal-correct .opt-key{background:rgba(74,240,196,.2);color:var(--green)}
+.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
+.kcheck-feedback.show{display:block}.kcheck-feedback.good{background:rgba(74,240,196,.08);border:1px solid rgba(74,240,196,.2);color:#5ab8a8}.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border)}.lab-step:last-child{border-bottom:none}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}.lab-step:last-child .step-connector{display:none}
+.step-content{flex:1;padding-top:4px}
+.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
+.step-body{font-size:14px;color:var(--text);line-height:1.7}
+.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}.step-body li{color:#a0a8bc}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
+.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
+.check-item:hover{border-color:var(--border-hi)}.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
+.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
+.next-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px}
+.next-btn:hover{opacity:.88}.next-btn.lab-btn{background:var(--lab);color:var(--bg)}
+.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s;display:inline-flex;align-items:center}
+.prev-btn:hover{color:var(--text);border-color:var(--text)}
+.completion-card{text-align:center;padding:56px 32px}
+.completion-icon{font-size:48px;margin-bottom:20px;display:block}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
+.completion-card p{color:var(--muted);max-width:420px;margin:0 auto 28px;font-size:14px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,90,90,.1);border:1px solid rgba(240,90,90,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.lesson-topbar{padding:14px 24px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 4 · Day 23</div>
+    <h2>GuardDuty<br>Threat Intelligence</h2>
+    <div class="sidebar-meta"><span class="chip">GuardDuty</span><span class="chip">ML Detection</span><span class="chip">Threat Intel</span><span class="chip">4 lessons</span></div>
+  </div>
+  <div class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">How GuardDuty Detects Threats</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(1)"><span class="nav-num">02</span><span class="nav-label">Finding Types: Reconnaissance to Impact</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(2)"><span class="nav-num">03</span><span class="nav-label">Malware & Crypto Mining Detection</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(3)"><span class="nav-num">04</span><span class="nav-label">Triage, Suppression & Response</span><span class="nav-check">✓</span></div>
+    <div class="nav-group-label" style="margin-top:8px">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)"><span class="nav-num" style="color:var(--lab)">🔬</span><span class="nav-label">Hands-on: Enable GuardDuty + Findings Analysis</span><span class="nav-check">✓</span></div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+<div class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Day 23 &nbsp;/&nbsp; <span id="topbar-title">How GuardDuty Detects Threats</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- LESSON 1 -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-security">Threat Detection · Foundational</div>
+    <h1>How GuardDuty<br><em>Detects Threats</em></h1>
+    <p><strong>Objective:</strong> Understand what data sources GuardDuty analyses, how its ML-based behavioural detection works, and what distinguishes it from the rule-based CloudWatch alarms you built yesterday.</p>
+    <p>CloudTrail alarms from Day 22 fire on <em>known bad events</em> — you explicitly told them what to look for. GuardDuty is different: it <strong>learns your environment's normal behaviour</strong> and fires when something deviates from that baseline — even for attack patterns you didn't think to define a rule for.</p>
+    <div class="callout insight">
+      <div class="callout-title">💡 Three Detection Engines in One</div>
+      GuardDuty combines three approaches: (1) <strong>Threat intelligence feeds</strong> — known malicious IPs, domains, and file hashes from AWS + third-party feeds (CrowdStrike, Proofpoint). (2) <strong>Anomaly detection ML</strong> — behavioural baseline per account/region; flags deviations like "this role never called EC2:RunInstances before" or "this IP never accessed this bucket". (3) <strong>Rule-based signatures</strong> — known attack patterns like DNS tunnelling, crypto mining pools, Tor exit nodes.
+    </div>
+    <table class="styled-table">
+      <thead><tr><th>Data Source</th><th>What GuardDuty sees</th><th>Detects</th></tr></thead>
+      <tbody>
+        <tr><td>CloudTrail</td><td>All management + data events API calls</td><td>Credential theft, privilege escalation, data exfil</td></tr>
+        <tr><td>VPC Flow Logs</td><td>Network traffic accept/reject per ENI</td><td>Port scans, C2 beaconing, crypto miner pools</td></tr>
+        <tr><td>DNS Logs</td><td>DNS queries from within your VPC</td><td>DNS tunnelling, C2 via DNS, known malware domains</td></tr>
+        <tr><td>EKS Audit Logs</td><td>Kubernetes API calls in EKS clusters</td><td>Pod privilege escalation, anomalous exec commands</td></tr>
+        <tr><td>S3 Data Events</td><td>Object-level S3 access patterns</td><td>Mass download, cross-account access anomalies</td></tr>
+        <tr><td>Malware Scans</td><td>EBS volume snapshots on finding trigger</td><td>Known malware signatures on EC2/ECS</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warning">
+      <div class="callout-title">⚠ 14-Day Baseline Period</div>
+      When you first enable GuardDuty, it spends approximately 14 days building a behavioural baseline for your account before anomaly-based detections become reliable. Threat intelligence and rule-based detections (known bad IPs, crypto miners) fire immediately from day one. Don't judge GuardDuty's effectiveness in the first two weeks.
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">GuardDuty generates a finding: <code>UnauthorizedAccess:IAMUser/TorIPCaller</code>. Your team says the developer regularly uses a VPN, so this is a false positive. What should you do?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">A</span>Disable GuardDuty's Tor detection rule — it's too noisy in environments with VPN users</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)"><span class="opt-key">B</span>Investigate first — confirm the developer's VPN exit IP matches a known Tor exit node (not just any VPN), verify the developer was working at that time, then create a suppression rule scoped to that IP + the specific user ARN if confirmed legitimate</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">C</span>Archive the finding — VPN usage commonly triggers this and it's almost always a false positive</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">D</span>No action needed — GuardDuty findings are informational only and don't require triage</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" disabled>← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 2 -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-threat">Finding Types · Foundational</div>
+    <h1>Finding Types:<br><em>Reconnaissance to Impact</em></h1>
+    <p><strong>Objective:</strong> Read and interpret GuardDuty finding types using the MITRE ATT&CK kill-chain — from initial reconnaissance through to data exfiltration and impact — so you can triage by attack stage, not just severity score.</p>
+    <p>GuardDuty finding names follow a structured format: <code>ThreatPurpose:ResourceType/ThreatFamilyName.DetectionMechanism!Artifact</code>. Once you understand the naming convention, you can diagnose what stage of an attack is in progress without reading the full description.</p>
+
+    <div class="finding-card">
+      <div class="finding-header"><span class="finding-type">Recon:EC2/PortProbeUnprotectedPort</span><span class="sev-badge sev-medium">MEDIUM</span></div>
+      <div class="finding-body"><strong>Attack stage: Reconnaissance (TA0043)</strong>Something is scanning your EC2 instance's open ports from a known malicious IP. The instance has a port accessible from the internet that isn't behind a load balancer. This is often automated scanning — low signal alone, high signal if followed by exploitation findings.</div>
+    </div>
+    <div class="finding-card">
+      <div class="finding-header"><span class="finding-type">UnauthorizedAccess:IAMUser/ConsoleLoginSuccess.B</span><span class="sev-badge sev-high">HIGH</span></div>
+      <div class="finding-body"><strong>Attack stage: Initial Access (TA0001)</strong>A console login succeeded from an unusual location or device. The ".B" suffix means GuardDuty's ML model flagged the login as anomalous against this user's historical pattern — different country, different ASN, different time of day. Credential stuffing or account takeover in progress.</div>
+    </div>
+    <div class="finding-card">
+      <div class="finding-header"><span class="finding-type">PrivilegeEscalation:IAMUser/AdministrativePermissions</span><span class="sev-badge sev-high">HIGH</span></div>
+      <div class="finding-body"><strong>Attack stage: Privilege Escalation (TA0004)</strong>An IAM entity that previously had limited permissions has attempted to enumerate or assume administrative-level access. Common pattern: attacker with developer credentials probing for privilege escalation paths before full compromise.</div>
+    </div>
+    <div class="finding-card">
+      <div class="finding-header"><span class="finding-type">Exfiltration:S3/AnomalousBehavior</span><span class="sev-badge sev-critical">CRITICAL</span></div>
+      <div class="finding-body"><strong>Attack stage: Exfiltration (TA0010)</strong>A principal is accessing S3 objects at a volume or rate significantly higher than their established baseline. This is GuardDuty's ML model firing — not a rule. The principal exists in your account and has legitimate access, but something changed dramatically. Active data exfiltration pattern.</div>
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">GuardDuty fires three findings in sequence over 4 hours on the same EC2 instance: <code>Recon:EC2/PortProbeUnprotectedPort</code> (Medium), then <code>UnauthorizedAccess:EC2/SSHBruteForce</code> (High), then <code>Backdoor:EC2/C&CActivity.B</code> (High). How should you interpret this sequence?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">A</span>Three unrelated events — each should be triaged independently with no assumed connection</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)"><span class="opt-key">B</span>A complete attack progression: reconnaissance → initial access attempt → successful compromise with C2 establishment. The instance is likely compromised and calling back to an attacker-controlled server. Isolate immediately</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">C</span>False positives — port probes and SSH brute force are common internet noise and the C2 finding is likely a VPN connection</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">D</span>The first two are noise but the C2 finding alone warrants investigation</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 3 -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-security">Malware & Crypto · Intermediate</div>
+    <h1>Malware & Crypto<br><em>Mining Detection</em></h1>
+    <p><strong>Objective:</strong> Understand how GuardDuty detects crypto miners and malware — the two most common threats in cloud environments — and what the findings tell you about the attack's stage and blast radius.</p>
+    <p>Crypto mining is the most financially motivated cloud attack. Attackers compromise accounts, spin up GPU/CPU-heavy instances in multiple regions, and mine cryptocurrency at the account owner's expense. A fully-provisioned crypto mining operation can cost $50,000+ per month before detection. GuardDuty's ML identifies mining pool communication patterns within hours.</p>
+    <div class="finding-card">
+      <div class="finding-header"><span class="finding-type">CryptoCurrency:EC2/BitcoinTool.B!DNS</span><span class="sev-badge sev-high">HIGH</span></div>
+      <div class="finding-body"><strong>What it means:</strong> The EC2 instance is making DNS queries to domains associated with cryptocurrency mining pools. The <code>!DNS</code> suffix identifies the data source (DNS logs). The instance is either compromised by a miner or running unauthorised mining software. Check: what processes are running, what launched them, when the instance was last patched.</div>
+    </div>
+    <div class="finding-card">
+      <div class="finding-header"><span class="finding-type">Execution:EC2/MaliciousFile</span><span class="sev-badge sev-critical">CRITICAL</span></div>
+      <div class="finding-body"><strong>What it means:</strong> GuardDuty's malware protection scanned an EBS volume and found a file matching a known malware signature. This triggers automatically when GuardDuty detects suspicious activity on an instance — it takes an EBS snapshot and scans it without interrupting the running instance. The finding includes the file path, hash, and malware family name.</div>
+    </div>
+    <div class="callout tip">
+      <div class="callout-title">✓ GuardDuty Malware Protection — How It Works</div>
+      When GuardDuty detects suspicious network or API behaviour on an EC2 instance, it can automatically initiate a malware scan: (1) Creates an EBS snapshot of the instance volume, (2) Mounts the snapshot in an isolated GuardDuty-managed account, (3) Scans with signature + heuristic detection, (4) Deletes the snapshot regardless of result. This is fully agentless — nothing is installed on your instance. Enable it under GuardDuty → Protection Plans → Malware Protection.
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash — list GuardDuty findings by severity</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment"># Get detector ID first</span>
+DETECTOR=$(aws guardduty list-detectors --query <span class="str">'DetectorIds[0]'</span> --output text)
+
+<span class="comment"># List HIGH and CRITICAL findings (severity >= 7.0)</span>
+aws guardduty list-findings \
+  --detector-id $DETECTOR \
+  --finding-criteria <span class="str">'{"Criterion":{"severity":{"Gte":7}}}'</span> \
+  --query <span class="str">'FindingIds'</span>
+
+<span class="comment"># Get full details of specific findings</span>
+aws guardduty get-findings \
+  --detector-id $DETECTOR \
+  --finding-ids <span class="str">"finding-id-here"</span> \
+  --query <span class="str">'Findings[*].{Type:Type,Severity:Severity,Resource:Resource.ResourceType,IP:Service.Action.NetworkConnectionAction.RemoteIpDetails.IpAddressV4}'</span></pre>
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">GuardDuty fires <code>CryptoCurrency:EC2/BitcoinTool.B!DNS</code> on an instance in <code>ap-southeast-2</code> — a region your team doesn't normally use. What two things should you check immediately?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">A</span>Check GuardDuty's false positive rate for this finding type and file a suppression rule if it exceeds 10%</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)"><span class="opt-key">B</span>Check (1) who launched the instance — CloudTrail RunInstances in ap-southeast-2 for the past 30 days (compromised credential or insider?), and (2) what other regions have unusual EC2 activity — crypto miners typically spin up across many regions simultaneously</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">C</span>Check the instance's security group — the finding is likely caused by overly permissive inbound rules</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">D</span>Check the IAM credentials attached to the instance — mining software requires elevated permissions to run</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 4 -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-ops">Triage & Response · Intermediate</div>
+    <h1>Triage, Suppression<br><em>& Response</em></h1>
+    <p><strong>Objective:</strong> Build a repeatable finding triage workflow — severity → context → decision — and know when to suppress vs investigate vs escalate. Understand how GuardDuty integrates with EventBridge for automated response.</p>
+    <p>A GuardDuty deployment with no triage process becomes noise. The goal is a workflow where every finding gets a decision within its SLA — Critical in 15 minutes, High in 1 hour, Medium in 4 hours — not buried in a queue.</p>
+    <div class="callout insight">
+      <div class="callout-title">💡 The 3-Question Triage Framework</div>
+      For every finding, answer three questions before deciding: (1) <strong>Is this a known legitimate pattern?</strong> (NAT gateway, security scanner, your pen test team) → suppression candidate. (2) <strong>Is the affected resource high value?</strong> (production DB, PCI data bucket, admin role) → escalate regardless of severity. (3) <strong>Is there a companion finding?</strong> (finding + same resource in recent history = kill chain) → treat as incident, not an alert.
+    </div>
+    <table class="styled-table">
+      <thead><tr><th>Finding Severity</th><th>SLA</th><th>Default Action</th></tr></thead>
+      <tbody>
+        <tr><td>Critical (9.0+)</td><td>15 minutes</td><td>Auto-isolate (SG change via Lambda) + page on-call</td></tr>
+        <tr><td>High (7.0–8.9)</td><td>1 hour</td><td>Notify security team Slack channel + open incident ticket</td></tr>
+        <tr><td>Medium (4.0–6.9)</td><td>4 hours</td><td>Triage queue — investigate during business hours</td></tr>
+        <tr><td>Low (1.0–3.9)</td><td>24 hours</td><td>Log and trend — watch for volume spikes</td></tr>
+      </tbody>
+    </table>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">JSON — EventBridge rule: route critical GuardDuty findings to Lambda</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre>{
+  <span class="key">"source"</span>: [<span class="str">"aws.guardduty"</span>],
+  <span class="key">"detail-type"</span>: [<span class="str">"GuardDuty Finding"</span>],
+  <span class="key">"detail"</span>: {
+    <span class="hl2">"severity"</span>: [{ <span class="str">"numeric"</span>: [<span class="str">">="</span>, <span class="key">9.0</span>] }]
+  }
+}
+<span class="comment">// Route to Lambda that: isolates SG + notifies Slack + creates ticket</span>
+<span class="comment">// This is the SOAR pattern — covered in depth on Day 26</span></pre>
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">GuardDuty fires a High finding daily for your NAT Gateway's IP appearing in threat intel feeds (it routes all outbound traffic). You've confirmed this is the NAT Gateway. What's the correct response?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">A</span>Disable the threat intelligence feature for your account — the NAT Gateway IP is causing too much noise</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)"><span class="opt-key">B</span>Create a suppression rule scoped to: finding type = this specific type AND resource = the NAT Gateway's Elastic IP. This silences the false positive without broadly disabling the detection for real threats from other IPs</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">C</span>Archive each finding manually as it arrives — suppression rules are too broad and may hide real threats</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">D</span>Replace the NAT Gateway with a different IP — GuardDuty findings indicate the IP is permanently blocklisted</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="next()">Start Lab →</button></div>
+  </div>
+
+  <!-- LAB -->
+  <div class="lesson-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-On Lab</div>
+    <h1>Enable GuardDuty +<br><em>Findings Analysis</em></h1>
+    <p>Enable GuardDuty with malware protection, generate a sample finding using GuardDuty's built-in test, analyse the finding JSON structure, and document a findings analysis report for your portfolio.</p>
+    <div class="callout lab-note"><div class="callout-title">⚡ Cost Note</div>GuardDuty: first 30 days free trial. After trial: ~$4/month for a small account (quantity-based pricing on CloudTrail events + flow logs). For this lab, the free trial covers everything. Disable GuardDuty after the lab if you don't want ongoing charges — but consider keeping it active since it's your primary threat detection layer.</div>
+    <div class="lab-steps">
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Enable GuardDuty with All Protection Plans <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~5 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>GuardDuty Console → Get started → Enable GuardDuty</li>
+              <li>Protection plans → Enable: <strong>S3 Protection</strong>, <strong>Malware Protection for EC2</strong>, <strong>RDS Protection</strong></li>
+              <li>Note your Detector ID from Settings — you'll need it for CLI commands</li>
+            </ol>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash — verify GuardDuty is active</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre>aws guardduty list-detectors
+aws guardduty get-detector \
+  --detector-id <span class="hl2">YOUR_DETECTOR_ID</span> \
+  --query <span class="str">'{Status:Status,Features:Features[*].Name}'</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Generate Sample Findings <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~5 min</span></div>
+          <div class="step-body">
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash — generate one of every finding type (safe — sample data only)</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre>aws guardduty create-sample-findings \
+  --detector-id <span class="hl2">YOUR_DETECTOR_ID</span> \
+  --finding-types \
+    <span class="str">"UnauthorizedAccess:IAMUser/TorIPCaller"</span> \
+    <span class="str">"CryptoCurrency:EC2/BitcoinTool.B!DNS"</span> \
+    <span class="str">"Backdoor:EC2/C&CActivity.B!DNS"</span> \
+    <span class="str">"Recon:EC2/PortProbeUnprotectedPort"</span></pre>
+            </div>
+            <p>Wait 30 seconds, then refresh the GuardDuty Findings console — you'll see sample findings for all four types.</p>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Analyse Finding JSON Structure <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash — export findings to JSON for portfolio</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre><span class="comment"># Get all finding IDs</span>
+FINDINGS=$(aws guardduty list-findings \
+  --detector-id <span class="hl2">YOUR_DETECTOR_ID</span> \
+  --query <span class="str">'FindingIds'</span> --output json)
+
+<span class="comment"># Export full finding details</span>
+aws guardduty get-findings \
+  --detector-id <span class="hl2">YOUR_DETECTOR_ID</span> \
+  --finding-ids $(echo $FINDINGS | jq -r '.[]' | tr '\n' ' ') \
+  > portfolio/week4/day23-guardduty-findings.json
+
+<span class="comment"># Quick summary table</span>
+aws guardduty get-findings \
+  --detector-id <span class="hl2">YOUR_DETECTOR_ID</span> \
+  --finding-ids $(echo $FINDINGS | jq -r '.[]' | tr '\n' ' ') \
+  --query <span class="str">'Findings[*].{Type:Type,Sev:Severity,Region:Region}'</span> \
+  --output table</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">4</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Build Findings Analysis Report <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min</span></div>
+          <div class="step-body">
+            <p>Create <code>portfolio/week4/day23-findings-analysis.md</code> with a triage table for each sample finding:</p>
+            <ul style="padding-left:20px;color:#a0a8bc;font-size:14px;line-height:2">
+              <li>Finding type + severity</li>
+              <li>MITRE ATT&CK tactic + technique</li>
+              <li>Immediate response action (per your SLA table)</li>
+              <li>Suppression criteria if false positive</li>
+            </ul>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash — commit</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre>git add portfolio/week4/day23-*.{json,md} screenshots/day-23*.png
+git commit -m <span class="str">"Day 23: GuardDuty enabled, sample findings generated, triage analysis complete"</span>
+git push</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">5</div></div>
+        <div class="step-content">
+          <div class="step-title">Create a Suppression Rule <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~5 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>GuardDuty Console → Findings → Filter by type <code>Recon:EC2/PortProbeUnprotectedPort</code></li>
+              <li>Actions → Create suppression rule — name it <code>lab-sample-suppression</code></li>
+              <li>Criteria: finding type = PortProbeUnprotectedPort AND <code>service.userFeedback = FALSE_POSITIVE</code></li>
+              <li>Screenshot the suppression rule — demonstrates false positive management in your portfolio</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Lab Checklist</h2>
+    <div class="checklist-progress"><div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div><span class="checklist-progress-label" id="cl-label">0 / 7</span></div>
+    <div class="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">GuardDuty enabled with S3 Protection + Malware Protection + RDS Protection active</div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">4 sample findings generated and visible in GuardDuty Findings console</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">Findings exported to <code>day23-guardduty-findings.json</code> in portfolio</div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">Findings analysis report completed with MITRE mapping and triage decisions for all 4 finding types</div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">Suppression rule created for PortProbe false positive — screenshot in portfolio</div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">GuardDuty console screenshot showing active detectors + protection plans</div></div>
+      <div class="check-item" onclick="toggleCheck(this,6)"><div class="check-box">✓</div><div class="check-text">All artefacts committed to <code>portfolio/week4/</code></div></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="finish()">Complete Day 23 ✓</button></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">🛡️</span>
+      <h1>Day 23 Complete</h1>
+      <p>GuardDuty is your ML-powered watchdog — continuously analysing 6 data sources for threats you didn't know to look for. Tomorrow: Security Hub CNAPP — unifying all your Week 4 signals into one risk dashboard.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 7 complete</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="day-22.html" style="text-decoration:none"><button class="prev-btn">← Day 22</button></a>
+        <a href="day-24.html" style="text-decoration:none"><button class="next-btn">Day 24 →</button></a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const STORAGE_KEY='csm-day23';const TOTAL=5;
+const titles=['How GuardDuty Detects Threats','Finding Types: Reconnaissance to Impact','Malware & Crypto Mining Detection','Triage, Suppression & Response','Hands-on: Enable GuardDuty + Findings Analysis'];
+const fb={
+  0:{good:"Correct. The key word is 'Tor' — this is specifically a Tor exit node, not just any VPN IP. A regular VPN won't trigger this finding. Before creating any suppression rule, confirm it's actually the developer's known VPN exit node and not a real Tor connection. Then scope the suppression tightly: this finding type + this specific user ARN + this IP range. A broad suppression ('disable Tor detection') would hide real attacker activity using Tor for anonymity.",bad:"Not quite. This finding is specific to Tor exit nodes, not generic VPN IPs — confirm that the developer's VPN actually routes through a Tor exit node before treating this as a false positive. The correct response is always investigate first, then suppress with a tightly-scoped rule if confirmed legitimate. Archiving manually every time is operationally unsustainable. Disabling the Tor detection rule account-wide would remove protection against real Tor-based attacks."},
+  1:{good:"Correct. Three findings on the same resource in sequence tell a kill-chain story: port probe (attacker scanned and found an open port) → SSH brute force (attacker tried to authenticate) → C2 activity (attacker succeeded and established command-and-control). This is a textbook progression from MITRE TA0043 → TA0001 → TA0011. The instance is almost certainly compromised. Immediate actions: isolate with security group change, take EBS snapshot for forensics, rotate any credentials on or accessible from the instance.",bad:"Not quite. The sequence matters enormously. Three findings on the same resource over 4 hours is a kill-chain progression, not coincidence: reconnaissance confirmed an open port, brute force gained access, and C2 activity confirms the attacker has a foothold and is talking to a command server. Treating these as unrelated would leave a compromised instance active on your network. Always correlate findings on the same resource within a time window — it's how you distinguish an incident from an alert."},
+  2:{good:"Correct. Two critical immediate checks: (1) CloudTrail in ap-southeast-2 for RunInstances — who launched this instance? If it's a role or user that doesn't normally operate in that region, you have credential compromise. Check the source IP of the API call. (2) Cross-region scope — crypto miners are almost always multi-region operations. Check CloudTrail and GuardDuty in every region for similar activity. An instance in one unusual region is rarely the full picture.",bad:"Not quite. The security group doesn't explain crypto mining DNS queries — the instance is communicating outbound to mining pools, not receiving inbound attacks. IAM permissions don't explain it either — mining software doesn't need elevated AWS permissions to mine. The critical questions are: who launched this instance in a region your team doesn't use (compromised credential?), and is there similar activity in other regions (how widespread is the compromise)?"},
+  3:{good:"Correct. Suppression rules are the right tool for known-legitimate patterns. The key is scoping: suppress exactly (this finding type) AND (this specific NAT Gateway EIP) — not broadly disabling threat intelligence for the whole account. This way the detection still fires for all other IPs, and only the confirmed false positive pattern is silenced. Document the suppression rule with a business justification so future engineers know why it exists.",bad:"Not quite. Disabling threat intelligence entirely removes protection for all IPs, not just your NAT Gateway. Manually archiving every daily finding is unsustainable — that's what suppression rules are built for. Replacing the NAT Gateway IP doesn't help — the new IP could also appear in threat intel feeds, and this misunderstands what the finding means (it means traffic is routing through a flagged IP, which your NAT Gateway does legitimately). Create a scoped suppression rule."}
+};
+let state=loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
+function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
+function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/4*100);document.getElementById('score-val').textContent=state.correct.length+' / 4 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked;document.getElementById('pane-complete').classList.add('active');document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
+function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
+function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
+function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
+function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
+function updateChecklist(){const total=7,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
+function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
+function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const opts=document.querySelectorAll('#pane-'+idx+' .kcheck-opt');if(!opts.length)return;opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
+restoreState();
+</script>
+</body>
+</html>

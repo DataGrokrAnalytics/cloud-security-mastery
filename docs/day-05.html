@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 5 — Compliance Operations: AWS Artifact & SOC2/PCI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#4af0c4;--accent-dim:rgba(74,240,196,.08);--amber:#f0924a;--violet:#8a7fff;--danger:#f05a5a;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)}.tag-warning{color:var(--amber)}.tag-security{color:var(--accent)}.tag-ops{color:#f0c84a}.tag-lab{color:var(--lab)}.tag-compliance{color:#8a7fff}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}.lab-pane h1 em{color:var(--lab)}
+.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+.tsc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 0}
+.tsc-card{border:1px solid var(--border);border-radius:8px;padding:18px 20px;background:var(--surface)}
+.tsc-abbr{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);margin-bottom:4px}
+.tsc-name{font-family:'DM Serif Display',serif;font-size:14px;color:#e4eaf6;margin-bottom:8px;font-weight:400}
+.tsc-desc{font-size:13px;color:#8a92a8;line-height:1.6}
+.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
+.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+.styled-table tr:hover td{background:rgba(255,255,255,.02)}
+.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--violet)}
+.evidence-row{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--border)}
+.evidence-row:last-child{border-bottom:none}
+.evidence-icon{font-size:20px;width:28px;flex-shrink:0}
+.evidence-body{flex:1}
+.evidence-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);margin-bottom:4px}
+.evidence-desc{font-size:13.5px;color:#8a92a8;line-height:1.6}
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:var(--accent)}.code-block pre .hl2{color:var(--amber)}.code-block pre .comment{color:var(--muted)}
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--violet);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
+.kcheck-opt:hover:not(.disabled){border-color:var(--violet);background:rgba(138,127,255,.05);color:var(--text)}
+.kcheck-opt.correct{border-color:var(--accent);background:rgba(74,240,196,.07);color:var(--accent)}
+.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.07);color:var(--danger)}
+.kcheck-opt.reveal-correct{border-color:var(--accent);background:rgba(74,240,196,.04);color:#6e9e90}
+.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
+.kcheck-opt.correct .opt-key{background:var(--accent);color:var(--bg)}.kcheck-opt.wrong .opt-key{background:var(--danger);color:#fff}.kcheck-opt.reveal-correct .opt-key{background:rgba(74,240,196,.2);color:var(--accent)}
+.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
+.kcheck-feedback.show{display:block}.kcheck-feedback.good{background:rgba(74,240,196,.08);border:1px solid rgba(74,240,196,.2);color:#7eceb8}.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border)}.lab-step:last-child{border-bottom:none}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all .3s;position:relative;z-index:1}
+.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}.lab-step:last-child .step-connector{display:none}
+.step-content{flex:1;padding-top:4px}
+.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
+.step-body{font-size:14px;color:var(--text);line-height:1.7}
+.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}.step-body li{color:#a0a8bc}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
+.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
+.check-item:hover{border-color:var(--border-hi)}.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
+.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
+.next-btn{background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px;text-decoration:none}
+.next-btn:hover{opacity:.88}.next-btn.lab-btn{background:var(--lab)}
+.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center}
+.prev-btn:hover{color:var(--text);border-color:var(--text)}.prev-btn:disabled{opacity:.3;cursor:default}
+.completion-card{text-align:center;padding:56px 32px}
+.completion-icon{font-size:48px;margin-bottom:20px;display:block}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
+.completion-card p{color:var(--muted);max-width:420px;margin:0 auto 28px;font-size:14px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(74,240,196,.1);border:1px solid rgba(74,240,196,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.tsc-grid{grid-template-columns:1fr}.lesson-topbar{padding:14px 24px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 1 · Day 5</div>
+    <h2>Compliance Operations:<br>AWS Artifact</h2>
+    <div class="sidebar-meta"><span class="chip">Beginner</span><span class="chip">4 lessons</span><span class="chip">1 lab</span><span class="chip">~4h</span></div>
+  </div>
+  <div class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">SOC2 — The 5 Trust Services Criteria</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(1)"><span class="nav-num">02</span><span class="nav-label">PCI DSS 4.0 Cloud Requirements</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(2)"><span class="nav-num">03</span><span class="nav-label">AWS Artifact — What It Is &amp; Why It Matters</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(3)"><span class="nav-num">04</span><span class="nav-label">Evidence Collection Automation</span><span class="nav-check">✓</span></div>
+    <div class="nav-group-label" style="margin-top:8px">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)"><span class="nav-num" style="color:var(--lab)">🔬</span><span class="nav-label">Hands-on: Compliance Evidence Package</span><span class="nav-check">✓</span></div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+<div class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Day 5 &nbsp;/&nbsp; <span id="topbar-title">SOC2 — The 5 Trust Services Criteria</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- LESSON 1 -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-compliance">Compliance Framework</div>
+    <h1>SOC2 — The 5<br><em>Trust Services Criteria</em></h1>
+    <p><strong>Objective:</strong> Understand what SOC2 audits, why customers demand it, and which of the five criteria your AWS infrastructure directly supports.</p>
+    <p>SOC2 (System and Organisation Controls 2) is an auditing standard by the AICPA. A SOC2 Type II report tells your enterprise customers: <strong>an independent auditor observed your controls operating effectively for 6–12 months.</strong> It's the most requested compliance document in B2B SaaS sales.</p>
+    <div class="tsc-grid">
+      <div class="tsc-card"><div class="tsc-abbr">CC</div><div class="tsc-name">Security</div><div class="tsc-desc">Protection against unauthorised access. Your IAM policies, MFA, and Security Hub controls map directly here.</div></div>
+      <div class="tsc-card"><div class="tsc-abbr">A</div><div class="tsc-name">Availability</div><div class="tsc-desc">Systems are available for operation as committed. Multi-AZ deployments, Route 53 health checks, Auto Scaling.</div></div>
+      <div class="tsc-card"><div class="tsc-abbr">PI</div><div class="tsc-name">Processing Integrity</div><div class="tsc-desc">System processing is complete, valid, accurate, and timely. Relevant for financial and transactional systems.</div></div>
+      <div class="tsc-card"><div class="tsc-abbr">C</div><div class="tsc-name">Confidentiality</div><div class="tsc-desc">Information designated confidential is protected. KMS encryption, S3 bucket policies, VPC network controls.</div></div>
+      <div class="tsc-card" style="grid-column:1/-1"><div class="tsc-abbr">P</div><div class="tsc-name">Privacy</div><div class="tsc-desc">Personal information is collected, used, retained, disclosed, and disposed of correctly. Amazon Macie for PII detection, data retention policies.</div></div>
+    </div>
+    <div class="callout insight"><div class="callout-title">💡 Security Is Always Required</div>The Security (CC) criterion is the only one that every SOC2 audit includes. Availability, Processing Integrity, Confidentiality, and Privacy are optional add-ons based on what your product does. Every control you've implemented this week directly maps to the CC category.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Which SOC2 Trust Services Criterion is mandatory for every SOC2 audit, and which AWS controls from this week map to it?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">A</span>Availability — multi-AZ deployments from Day 1 satisfy this</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">B</span>Privacy — because all companies handle personal data</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)"><span class="opt-key">C</span>Security — IAM hardening (Day 1), CSPM/Config (Day 2), CIS Benchmark (Day 3), SCPs (Day 4) all map to CC controls</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">D</span>Confidentiality — because protecting data is the core requirement</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" disabled>← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 2 -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-compliance">Compliance Framework</div>
+    <h1>PCI DSS 4.0<br><em>Cloud Requirements</em></h1>
+    <p><strong>Objective:</strong> Understand which PCI DSS 4.0 requirements are specific to cloud environments and apply to your AWS architecture.</p>
+    <p>PCI DSS (Payment Card Industry Data Security Standard) applies to any organisation that stores, processes, or transmits cardholder data. Version 4.0 added explicit cloud-native requirements that map directly to the tools you're building this week.</p>
+    <table class="styled-table">
+      <thead><tr><th>PCI DSS 4.0 Req.</th><th>What it requires</th><th>AWS implementation</th></tr></thead>
+      <tbody>
+        <tr><td>Req 1.3</td><td>Network access controls restrict inbound/outbound traffic to cardholder data environment</td><td>Security groups + NACLs + VPC with private subnets (Day 15)</td></tr>
+        <tr><td>Req 6.4.3</td><td>Scripts and code deployed to production must be reviewed — IaC scanning</td><td>Checkov scanning of CloudFormation templates (Day 11)</td></tr>
+        <tr><td>Req 7.2</td><td>Least-privilege access controls for all system components</td><td>IAM policies with minimal permissions (Day 8)</td></tr>
+        <tr><td>Req 10.2</td><td>Audit logs must be enabled for all system components</td><td>CloudTrail + Config recording (Days 2 &amp; 22)</td></tr>
+        <tr><td>Req 12.3.2</td><td>Targeted risk analysis for each requirement not met via prescriptive approach</td><td>Security Hub risk scoring + documented exceptions</td></tr>
+      </tbody>
+    </table>
+    <div class="callout tip"><div class="callout-title">✓ AWS Artifact Fills the Gap</div>AWS is itself PCI DSS certified as a service provider. AWS Artifact gives you their Attestation of Compliance (AoC) — the document that proves AWS's own infrastructure meets PCI requirements. You download this to show auditors that your cloud provider is compliant, then your controls cover the rest.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A PCI QSA asks you: "How do you know your cloud provider's infrastructure is PCI compliant?" What do you show them?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">A</span>Your own Security Hub score — it shows your account is compliant</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)"><span class="opt-key">B</span>AWS's Attestation of Compliance from AWS Artifact — AWS's own PCI certification document</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">C</span>AWS's published security whitepaper — general security documentation</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">D</span>Your AWS Support contract — Enterprise Support includes compliance guarantees</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 3 -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-ops">Operations</div>
+    <h1>AWS Artifact —<br><em>What It Is &amp; Why It Matters</em></h1>
+    <p><strong>Objective:</strong> Understand what AWS Artifact provides, why it matters for audits, and how to use it without opening a support ticket.</p>
+    <p>AWS Artifact is a self-service portal for AWS compliance documentation. Before Artifact, getting AWS's SOC2 or PCI reports required filing a support request and waiting days. Now you download them in seconds.</p>
+    <div class="evidence-row">
+      <span class="evidence-icon">📋</span>
+      <div class="evidence-body"><div class="evidence-label">SOC2 Type I</div><div class="evidence-desc">Point-in-time audit — confirms controls exist and are designed correctly at a specific date. Useful early in your compliance journey.</div></div>
+    </div>
+    <div class="evidence-row">
+      <span class="evidence-icon">📊</span>
+      <div class="evidence-body"><div class="evidence-label">SOC2 Type II</div><div class="evidence-desc">Operating effectiveness audit over 6–12 months — confirms controls worked correctly throughout the period. This is what enterprise customers actually require. Issued by AWS every 6 months.</div></div>
+    </div>
+    <div class="evidence-row">
+      <span class="evidence-icon">💳</span>
+      <div class="evidence-body"><div class="evidence-label">PCI DSS Attestation of Compliance</div><div class="evidence-desc">Proof that AWS's infrastructure meets PCI DSS requirements as a service provider. Required by your PCI QSA when you use AWS for cardholder data environments.</div></div>
+    </div>
+    <div class="evidence-row" style="border-bottom:none">
+      <span class="evidence-icon">🤝</span>
+      <div class="evidence-body"><div class="evidence-label">AWS Customer Agreement &amp; DPA</div><div class="evidence-desc">The Data Processing Addendum (DPA) is required for GDPR compliance — it formalises AWS as a data processor acting on your behalf as a controller.</div></div>
+    </div>
+    <div class="callout warning"><div class="callout-title">⚠ AWS's Compliance ≠ Your Compliance</div>AWS Artifact proves AWS is compliant. It says nothing about how <em>you</em> use AWS. Your Security Hub score, Config compliance, and implemented controls prove <em>your</em> side of the shared responsibility model.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">An enterprise customer asks for a SOC2 Type II report. You have AWS's SOC2 Type II from Artifact and your own Security Hub CIS score at 85%. What do you need?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">A</span>Only AWS's SOC2 from Artifact — it covers the entire cloud environment</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">B</span>Only your Security Hub score — it demonstrates your security posture</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)"><span class="opt-key">C</span>Both — AWS's report covers their infrastructure; you need your own SOC2 audit to cover your application, configuration, and processes</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">D</span>Neither — enterprise customers accept AWS's certifications as sufficient</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 4 -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-ops">Automation</div>
+    <h1>Evidence Collection<br><em>Automation</em></h1>
+    <p><strong>Objective:</strong> Learn how to automate compliance evidence collection so audits don't require weeks of manual work.</p>
+    <p>Manual evidence collection for SOC2 typically takes 4–6 weeks of engineering time per audit cycle. Automation reduces this to a few hours. The key is building evidence collection into your normal operations — not scrambling when auditors arrive.</p>
+    <table class="styled-table">
+      <thead><tr><th>Evidence type</th><th>Manual approach</th><th>Automated approach</th></tr></thead>
+      <tbody>
+        <tr><td>Access control evidence</td><td>Screenshot IAM user list each quarter</td><td>AWS Config + scheduled reports via Lambda</td></tr>
+        <tr><td>Encryption-at-rest evidence</td><td>Manually check each S3 bucket/RDS instance</td><td>Config rule: encrypted-volumes, s3-bucket-server-side-encryption-enabled</td></tr>
+        <tr><td>Audit log evidence</td><td>Download CloudTrail exports per request</td><td>CloudTrail → S3 → Athena for on-demand querying</td></tr>
+        <tr><td>Incident response evidence</td><td>Write up incident reports manually after each event</td><td>GuardDuty findings → EventBridge → S3 archive (Day 23/26)</td></tr>
+        <tr><td>Vulnerability management evidence</td><td>Run Inspector scans manually before each audit</td><td>Inspector continuous scanning → findings → S3 export (Day 18)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout tip"><div class="callout-title">✓ The Portfolio Connection</div>Every screenshot you take during this programme is audit evidence. Your GitHub commit history is a continuous evidence trail showing security controls were actively managed throughout the programme period.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">An auditor asks for evidence that all your S3 buckets have server-side encryption enabled — for every day of the past 6 months. What's the most efficient source?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">A</span>Screenshot your S3 console today — shows current state</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">B</span>Run an AWS CLI command to list bucket encryption settings</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)"><span class="opt-key">C</span>AWS Config's configuration timeline — stores every encryption setting change with timestamps for the retention period</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">D</span>CloudTrail logs — they record every S3 API call including encryption changes</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="next()">Start Lab →</button></div>
+  </div>
+
+  <!-- LAB -->
+  <div class="lesson-pane lab-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-On Lab</div>
+    <h1>Build Your<br><em>Compliance Evidence Package</em></h1>
+    <p>You'll access AWS Artifact to download compliance reports, map your Week 1 controls to SOC2 criteria, and organise your first audit-ready evidence folder.</p>
+    <div class="callout lab-note"><div class="callout-title">⚡ No Cost</div>AWS Artifact reports are free to download. The NDA you sign is just an acknowledgment of the report's confidentiality — not a legal commitment.</div>
+
+    <div class="lab-steps">
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Download Reports from AWS Artifact <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>AWS Console → search <code>Artifact</code> → <strong>AWS Artifact</strong></li>
+              <li>Click <strong>Reports</strong></li>
+              <li>Search for <strong>SOC 2 Type II</strong> → click the most recent report → <strong>Download report</strong> → Accept NDA → Download PDF</li>
+              <li>Search for <strong>PCI DSS</strong> → download the Attestation of Compliance (AoC)</li>
+              <li>Save both to a folder: <code>portfolio/compliance-reports/</code></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Map Week 1 Controls to SOC2 Criteria <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~25 min</span></div>
+          <div class="step-body">
+            <p style="margin-bottom:12px;color:#8a92a8">Create a spreadsheet (<code>portfolio/week-1-control-mapping.csv</code>) with this structure:</p>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">CSV</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre>Control,AWS Service,SOC2 Criteria,CIS Control,Evidence
+Root MFA enabled,IAM,CC6.1,1.5,Screenshot Day-01
+IAM admin user created,IAM,CC6.1 CC6.3,1.1,Screenshot Day-01
+AWS Config enabled,Config,CC7.1 CC7.2,2.1,Screenshot Day-02
+CIS Benchmark >50%,Security Hub,CC7.1,Multiple,Screenshot Day-03
+SCP DenyPublicS3,Organizations,CC6.6,2.1.2,Screenshot Day-04</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">3</div></div>
+        <div class="step-content">
+          <div class="step-title">Organise Your Evidence Folder <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre><span class="comment"># Recommended portfolio structure</span>
+portfolio/
+├── compliance-reports/
+│   ├── AWS-SOC2-Type-II-2025.pdf
+│   └── AWS-PCI-DSS-AoC-2025.pdf
+├── week-1-control-mapping.csv
+└── screenshots/
+    ├── day-01-root-mfa.png
+    ├── day-02-config-dashboard.png
+    ├── day-03-cis-score.png
+    └── day-04-scp-attached.png</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Completion Checklist</h2>
+    <div class="checklist-progress">
+      <div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div>
+      <span class="checklist-progress-label" id="cl-label">0 / 6</span>
+    </div>
+    <div class="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">AWS Artifact accessed and reports page reviewed</div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">SOC2 Type II report downloaded (most recent)</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">PCI DSS Attestation of Compliance downloaded</div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">Control mapping spreadsheet created with Week 1 controls</div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">Portfolio folder structure organised with screenshots from Days 1–4</div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">All evidence committed to GitHub portfolio repo</div></div>
+    </div>
+
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Portfolio Commit</h2>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre>git add portfolio/
+git commit -m <span class="hl">"Day 05: SOC2+PCI reports downloaded, Week 1 control mapping complete"</span>
+git push</pre>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="finish()">Complete Day 5 ✓</button></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">📜</span>
+      <h1>Day 5 Complete</h1>
+      <p>You understand SOC2 Trust Services Criteria, PCI DSS 4.0 cloud requirements, how AWS Artifact works, and how to build automated evidence collection into your normal operations.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> checklist items</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+        <button class="prev-btn" onclick="goTo(0);resetAll()">↩ Review</button>
+        <a href="../index.html" style="text-decoration:none"><button class="next-btn" style="background:var(--pill);color:var(--muted);border:1px solid var(--border-hi)">← Course Index</button></a>
+        <a href="day-06.html" style="text-decoration:none"><button class="next-btn lab-btn">Day 6 →</button></a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const STORAGE_KEY='csm-day05';const TOTAL=5;
+const titles=['SOC2 — The 5 Trust Services Criteria','PCI DSS 4.0 Cloud Requirements','AWS Artifact — What It Is & Why It Matters','Evidence Collection Automation','Hands-on: Compliance Evidence Package'];
+const fb={
+  0:{good:"Correct. Security (CC) is mandatory for all SOC2 audits. Every control from this week — IAM hardening, CSPM, CIS benchmark, and SCPs — maps directly to Common Criteria (CC) controls.",bad:"Not quite. Security (the CC category) is the only mandatory criterion. Availability, Privacy, etc. are optional. Your IAM, CSPM, and policy controls all map to CC."},
+  1:{good:"Correct. AWS's Attestation of Compliance (AoC) from Artifact is the official document proving AWS's infrastructure is PCI certified. You present this to show your cloud provider's compliance.",bad:"Not quite. Your Security Hub score shows your configuration posture. AWS's AoC from Artifact is the specific document that proves the underlying infrastructure where your workloads run is PCI certified."},
+  2:{good:"Correct. AWS's SOC2 covers their infrastructure. You need your own SOC2 audit (covering your application, configuration, access controls, and operational processes) to give customers a complete picture.",bad:"Not quite. AWS's SOC2 only covers AWS's own infrastructure. You need your own SOC2 audit to prove your application, configuration, and operating procedures are also controlled. Both are needed together."},
+  3:{good:"Correct. AWS Config's configuration timeline stores every configuration change with timestamps. It's the gold standard for historical compliance evidence — showing the state of controls at any point in the past.",bad:"Not quite. A screenshot only shows today. CloudTrail logs show API calls but not state. Config's configuration timeline is specifically designed to answer 'what was this setting on date X?' — exactly what auditors need."}
+};
+let state=loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
+function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
+function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/4*100);document.getElementById('score-val').textContent=state.correct.length+' / 4 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked+' / 6';document.getElementById('pane-complete').classList.add('active');document.getElementById('topbar-title').textContent='Complete';document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
+function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
+function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
+function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
+function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
+function updateChecklist(){const total=6,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
+function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
+function resetAll(){state={current:0,done:[],correct:[],answered:[],checks:[]};saveState();document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('done'));document.querySelectorAll('.kcheck-opt').forEach(o=>{o.classList.remove('correct','wrong','reveal-correct','disabled');o.style.pointerEvents='';});document.querySelectorAll('.kcheck-feedback').forEach(f=>{f.className='kcheck-feedback';f.textContent='';});document.querySelectorAll('.check-item').forEach(i=>i.classList.remove('checked'));updateChecklist();updateProgress();goTo(0);}
+function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const paneEl=document.getElementById('pane-'+idx);if(!paneEl)return;const opts=paneEl.querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
+restoreState();
+</script>
+</body>
+</html>

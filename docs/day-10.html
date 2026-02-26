@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 10 — CIEM Operations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161d;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#8a7fff;--accent-dim:rgba(138,127,255,.08);--amber:#f0924a;--violet:#8a7fff;--danger:#f05a5a;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w2:#8a7fff;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh}
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w2);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease}
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)}.tag-warning{color:var(--amber)}.tag-security{color:var(--accent)}.tag-lab{color:var(--lab)}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}.lab-pane h1 em{color:var(--lab)}
+.lesson-pane p{color:var(--text);margin-bottom:18px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+.sprawl-meter{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin:24px 0}
+.sprawl-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--danger);margin-bottom:16px}
+.sprawl-row{display:flex;align-items:center;gap:16px;margin-bottom:14px}
+.sprawl-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);width:120px;flex-shrink:0}
+.sprawl-bar-wrap{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.sprawl-bar{height:100%;border-radius:4px}
+.sprawl-val{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text);width:40px;text-align:right}
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:#8a7fff}.code-block pre .hl2{color:var(--amber)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--violet);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
+.kcheck-opt:hover:not(.disabled){border-color:var(--violet);background:rgba(138,127,255,.05);color:var(--text)}
+.kcheck-opt.correct{border-color:var(--accent);background:rgba(138,127,255,.1);color:var(--accent)}
+.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.07);color:var(--danger)}
+.kcheck-opt.reveal-correct{border-color:var(--accent);background:rgba(138,127,255,.05);color:#7a70cc}
+.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
+.kcheck-opt.correct .opt-key{background:var(--accent);color:#fff}.kcheck-opt.wrong .opt-key{background:var(--danger);color:#fff}.kcheck-opt.reveal-correct .opt-key{background:rgba(138,127,255,.25);color:var(--accent)}
+.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
+.kcheck-feedback.show{display:block}.kcheck-feedback.good{background:rgba(138,127,255,.08);border:1px solid rgba(138,127,255,.2);color:#9d94d8}.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border)}.lab-step:last-child{border-bottom:none}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}.lab-step:last-child .step-connector{display:none}
+.step-content{flex:1;padding-top:4px}
+.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
+.step-body{font-size:14px;color:var(--text);line-height:1.7}
+.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}.step-body li{color:#a0a8bc}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
+.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
+.check-item:hover{border-color:var(--border-hi)}.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
+.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
+.next-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px;text-decoration:none}
+.next-btn:hover{opacity:.88}.next-btn.lab-btn{background:var(--lab);color:var(--bg)}
+.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center}
+.prev-btn:hover{color:var(--text);border-color:var(--text)}
+.completion-card{text-align:center;padding:56px 32px}
+.completion-icon{font-size:48px;margin-bottom:20px;display:block}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
+.completion-card p{color:var(--muted);max-width:420px;margin:0 auto 28px;font-size:14px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(138,127,255,.1);border:1px solid rgba(138,127,255,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.lesson-topbar{padding:14px 24px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 2 · Day 10</div>
+    <h2>CIEM Operations</h2>
+    <div class="sidebar-meta"><span class="chip">Entitlement</span><span class="chip">4 lessons</span><span class="chip">1 lab</span><span class="chip">~4h</span></div>
+  </div>
+  <div class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">Entitlement Sprawl</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(1)"><span class="nav-num">02</span><span class="nav-label">Secrets Manager</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(2)"><span class="nav-num">03</span><span class="nav-label">Credential Reports &amp; Last-Accessed</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(3)"><span class="nav-num">04</span><span class="nav-label">Right-Sizing Permissions</span><span class="nav-check">✓</span></div>
+    <div class="nav-group-label" style="margin-top:8px">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)"><span class="nav-num" style="color:var(--lab)">🔬</span><span class="nav-label">Hands-on: Audit &amp; Cleanup</span><span class="nav-check">✓</span></div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+<div class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Week 2 · Day 10 &nbsp;/&nbsp; <span id="topbar-title">Entitlement Sprawl</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- L1 -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-warning">CIEM</div>
+    <h1>Entitlement<br><em>Sprawl</em></h1>
+    <p><strong>Objective:</strong> Understand Cloud Infrastructure Entitlement Management (CIEM) — why permissions accumulate far beyond what's needed and why this is the #1 cloud-native attack vector.</p>
+    <p>CIEM is a Gartner-defined capability for discovering, assessing, and right-sizing cloud identity permissions. The problem it solves is entitlement sprawl: over time, every cloud environment accumulates far more permissions than any identity actually uses.</p>
+    <div class="sprawl-meter">
+      <div class="sprawl-title">⚠ Typical Permission Sprawl (Palo Alto Unit 42, 2025)</div>
+      <div class="sprawl-row"><span class="sprawl-label">Permissions granted</span><div class="sprawl-bar-wrap"><div class="sprawl-bar" style="width:100%;background:var(--danger)"></div></div><span class="sprawl-val">10,000</span></div>
+      <div class="sprawl-row"><span class="sprawl-label">Permissions used</span><div class="sprawl-bar-wrap"><div class="sprawl-bar" style="width:10%;background:var(--accent)"></div></div><span class="sprawl-val">~1,000</span></div>
+      <div class="sprawl-row"><span class="sprawl-label">Dormant identities</span><div class="sprawl-bar-wrap"><div class="sprawl-bar" style="width:30%;background:var(--amber)"></div></div><span class="sprawl-val">30%</span></div>
+    </div>
+    <p>The causes are simple: developers request broad permissions to avoid friction, policies are copy-pasted from Stack Overflow, nobody removes permissions when a project ends, and IAM reviews happen annually at best. The result is that 90% of granted permissions are never used — but every one of them is available to an attacker who compromises that identity.</p>
+    <div class="callout breach"><div class="callout-title">⚠ Entitlement Abuse — #1 Cloud Attack Vector</div>Credential theft + overprivileged identity = maximum blast radius. An attacker who steals an IAM key with 10,000 permissions has far more options than one with 100. CIEM closes this gap by ensuring stolen credentials can't do much even if obtained.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A developer's IAM role has 500 permissions across 15 AWS services. The developer only works on a Lambda function that reads from one DynamoDB table. Which statement best describes this situation from a security perspective?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">A</span>This is fine — unused permissions don't create risk since the developer isn't using them</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)"><span class="opt-key">B</span>This is a high-risk entitlement sprawl pattern — if the developer's credentials are compromised, the attacker has 500 permissions across 15 services, not just DynamoDB access</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">C</span>This is normal for Lambda roles — Lambda needs broad permissions for monitoring and logging</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">D</span>This is only a risk if the developer has console access</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" disabled>← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- L2 -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-concept">Secrets Management</div>
+    <h1>AWS Secrets<br><em>Manager</em></h1>
+    <p><strong>Objective:</strong> Replace hardcoded credentials and long-lived secrets with Secrets Manager — the operational foundation for eliminating static credentials from your environment.</p>
+    <p>The most common source of credential sprawl is hardcoded secrets: database passwords in environment variables, API keys in application config, IAM access keys on developer laptops. Secrets Manager replaces all of these with centrally managed, automatically rotated secrets that applications retrieve at runtime.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash — Store and Retrieve a Secret</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment"># Store a database password</span>
+aws secretsmanager create-secret \
+  --name <span class="hl">prod/myapp/db-password</span> \
+  --secret-string <span class="str">'{"username":"admin","password":"s3cur3P@ss"}'</span>
+
+<span class="comment"># Enable automatic rotation (requires a Lambda rotation function)</span>
+aws secretsmanager rotate-secret \
+  --secret-id <span class="hl">prod/myapp/db-password</span> \
+  --rotation-rules <span class="hl2">AutomaticallyAfterDays=30</span>
+
+<span class="comment"># Retrieve in application (Python SDK)</span>
+<span class="comment"># import boto3; client.get_secret_value(SecretId='prod/myapp/db-password')</span></pre>
+    </div>
+    <div class="callout tip"><div class="callout-title">✓ Resource Policy on Secrets</div>Add a resource-based policy to every secret: allow only the specific Lambda or EC2 role that needs it. Then any other role that tries to access the secret gets denied — even with broad IAM permissions. This is defence-in-depth for secrets.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">An application's database password is hardcoded in an environment variable on an EC2 instance. A developer accidentally commits the instance user-data script to a public GitHub repo. What's the most resilient immediate response?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">A</span>Delete the GitHub repository and change the password — the repo is private now so it's safe</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)"><span class="opt-key">B</span>Immediately rotate the database password AND migrate it to Secrets Manager so future rotations are automatic and no credential is ever hardcoded again</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">C</span>Encrypt the environment variable — encrypted env vars are safe even if the script is exposed</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">D</span>Add GitHub secret scanning — it will detect and remove the credential from the public repo</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- L3 -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-concept">Audit Tools</div>
+    <h1>Credential Reports<br><em>&amp; Last-Accessed Data</em></h1>
+    <p><strong>Objective:</strong> Use IAM Credential Reports and last-accessed service data to identify dormant credentials and unused permissions that should be removed.</p>
+    <p><strong>IAM Credential Report</strong> is a CSV covering every IAM user: password age, last used, access key age, access key last used, MFA status. It's the fastest way to identify users with keys that haven't been used in 90+ days — those keys are dormant attack surfaces.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash — Generate and Download Credential Report</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment"># Trigger report generation (takes ~30 seconds)</span>
+aws iam generate-credential-report
+
+<span class="comment"># Download the CSV report</span>
+aws iam get-credential-report \
+  --query <span class="hl">'Content'</span> \
+  --output text | base64 -d > credential-report.csv
+
+<span class="comment"># Find users with keys not used in 90+ days</span>
+awk -F',' <span class="str">'NR>1 && $11!="N/A" {print $1,$10,$11}'</span> credential-report.csv</pre>
+    </div>
+    <p><strong>Last-accessed service data</strong> shows, for any IAM entity, when it last called each AWS service. If a role has EC2 permissions but hasn't called EC2 in 12 months, those permissions can be safely removed. Access this via IAM → Users/Roles → Access Advisor tab.</p>
+    <div class="callout insight"><div class="callout-title">💡 The 90-Day Rule</div>CIS AWS Foundations Benchmark requires disabling/removing IAM credentials unused for 90+ days. This is control 1.12. If your CIS score from Week 1 wasn't 100%, this is likely one of the gaps. The credential report is how you find and remediate it.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">IAM Access Advisor shows that a role's S3 permissions were last used 400 days ago. The role currently has s3:* on all buckets. What's the safest course of action?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">A</span>Delete the role immediately — 400 days of disuse means it's definitely not needed</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">B</span>Leave it — Access Advisor data can be inaccurate for Lambda functions</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)"><span class="opt-key">C</span>Investigate the role's use case, then either remove S3 permissions if confirmed unused or scope them down to specific buckets and actions actually needed</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">D</span>Set a CloudWatch alarm for when S3 is next used, and remove permissions if the alarm never fires in 90 days</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- L4 -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-security">Right-Sizing</div>
+    <h1>Right-Sizing<br><em>Permissions</em></h1>
+    <p><strong>Objective:</strong> Apply a systematic process for right-sizing overly permissive IAM policies using last-accessed data — reducing entitlement sprawl without breaking applications.</p>
+    <p>Right-sizing is the operational process of replacing broad permissions with minimal ones. The challenge: you can't just remove permissions without knowing the impact. The safe process uses CloudTrail + Access Advisor to find what's actually being called, then writes a policy with only those actions.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash — Find What a Role Actually Calls (CloudTrail)</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment"># Find all API calls made by a specific role in the last 90 days</span>
+aws cloudtrail lookup-events \
+  --lookup-attributes <span class="hl">AttributeKey=Username,AttributeValue=csm-app-role</span> \
+  --start-time <span class="str">$(date -d '90 days ago' +%Y-%m-%dT%H:%M:%SZ)</span> \
+  --query <span class="hl2">'Events[*].EventName'</span> \
+  --output text | sort | uniq
+
+<span class="comment"># Output: the minimal set of actions this role actually uses</span>
+<span class="comment"># Build a new policy with exactly these actions — nothing more</span></pre>
+    </div>
+    <div class="callout warning"><div class="callout-title">⚠ The Right-Sizing Risk</div>Removing permissions from production roles can break applications. Always: (1) test in staging first, (2) use a permission boundary to limit scope without breaking existing permissions, (3) monitor CloudWatch for AccessDenied errors for 30 days after the change.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">You're right-sizing a production Lambda role from PowerUserAccess (6,000+ permissions) to least privilege. What's the safest sequence?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">A</span>Replace PowerUserAccess with the minimal policy immediately — any AccessDenied errors indicate what to add back</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)"><span class="opt-key">B</span>Use CloudTrail to identify the actual API calls for 90 days → build minimal policy → test in staging → apply a permission boundary in production first → replace policy after monitoring confirms no AccessDenied errors</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">C</span>Use IAM Access Advisor to identify unused services → remove only those service permissions → leave the rest</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">D</span>Schedule the change during a maintenance window — if something breaks, roll back PowerUserAccess</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="next()">Start Lab →</button></div>
+  </div>
+
+  <!-- LAB -->
+  <div class="lesson-pane lab-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-On Lab</div>
+    <h1>CIEM Audit<br><em>&amp; Credential Cleanup</em></h1>
+    <p>Generate and analyse the IAM Credential Report, store a secret in Secrets Manager, and produce a dormant credentials CSV for your portfolio.</p>
+    <div class="callout lab-note"><div class="callout-title">⚡ Cost Note</div>Secrets Manager costs $0.40/secret/month. Create one secret for this lab and delete it at the end. Total cost: ~$0.01.</div>
+    <div class="lab-steps">
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Generate &amp; Analyse IAM Credential Report <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>IAM → Credential Report → Download Report</li>
+              <li>Open in Excel/Google Sheets</li>
+              <li>Filter: <code>access_key_1_last_used_date</code> = "N/A" or older than 90 days</li>
+              <li>Flag all users without MFA enabled (<code>mfa_active = false</code>)</li>
+              <li>Note: your admin user from Day 1 should have MFA = true. If any others exist, they're remediation candidates.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Store a Secret in Secrets Manager <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Secrets Manager → Store a new secret → Other type</li>
+              <li>Key: <code>db_password</code>, Value: a placeholder like <code>Lab-Secret-Day10!</code></li>
+              <li>Name: <code>csm/day10/test-secret</code></li>
+              <li>Disable automatic rotation (no rotation Lambda set up yet)</li>
+              <li>Screenshot the secret ARN for your portfolio</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Check Access Advisor for Your Admin Role <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>IAM → Roles → Select your admin role → Access Advisor tab</li>
+              <li>Identify services not accessed in the last 90 days</li>
+              <li>Note these as "candidates for permission reduction" in your markdown</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">4</div></div>
+        <div class="step-content">
+          <div class="step-title">Cleanup &amp; Document <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Delete the test secret: Secrets Manager → <code>csm/day10/test-secret</code> → Delete (immediate deletion in lab context is fine)</li>
+              <li>Save credential report to <code>portfolio/reports/day-10-credential-report.csv</code></li>
+              <li>Write <code>DAY-10-CIEM.md</code>: findings from credential report, Access Advisor analysis, right-sizing recommendations</li>
+              <li>GitHub commit: <code>"Day 10: CIEM audit complete — credential report analysed, Secrets Manager tested"</code></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Lab Completion Checklist</h2>
+    <div class="checklist-progress"><div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div><span class="checklist-progress-label" id="cl-label">0 / 6</span></div>
+    <div class="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">IAM Credential Report downloaded and analysed in spreadsheet</div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">Dormant credentials (90+ days unused) identified and flagged</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">Test secret created in Secrets Manager and ARN documented</div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">Access Advisor checked for admin role — unused services noted</div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">Test secret deleted from Secrets Manager</div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">DAY-10-CIEM.md written with findings and committed to GitHub</div></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="finish()">Complete Day 10 ✓</button></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">🗝️</span>
+      <h1>Day 10 Complete!</h1>
+      <p>You understand entitlement sprawl, can audit credentials with the IAM Credential Report, manage secrets with Secrets Manager, and right-size permissions using last-accessed data.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 6 items</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="../../index.html" style="text-decoration:none"><button class="prev-btn">← Course Index</button></a>
+        <a href="day-11.html" style="text-decoration:none"><button class="next-btn">Day 11: IaC Security →</button></a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const STORAGE_KEY='csm-day10';const TOTAL=5;
+const titles=['Entitlement Sprawl','Secrets Manager','Credential Reports & Last-Accessed','Right-Sizing Permissions','Hands-on: CIEM Audit & Cleanup'];
+const fb={
+  0:{good:"Correct. Unused permissions are not harmless — they represent the attacker's available actions if credentials are compromised. A role with 500 permissions in 15 services gives an attacker massive lateral movement capability. The developer only needs DynamoDB read access.",bad:"Not quite. Unused permissions are not safe — they represent the blast radius of a compromise. If the developer's credentials are stolen, the attacker inherits all 500 permissions, not just the ones the developer regularly uses."},
+  1:{good:"Correct. Both steps are critical: rotate immediately (the exposed password is compromised), and migrate to Secrets Manager so this can never happen again — automatic rotation means no static credential ever needs to be stored in code or config.",bad:"Not quite. Deleting the repo doesn't help — GitHub exposure means the credential was potentially already scraped by bots (this happens within seconds of public exposure). The password must be rotated immediately, and then migrated to Secrets Manager to prevent recurrence."},
+  2:{good:"Correct. Never delete blindly — investigate first. The 400-day gap suggests the permissions are unused, but confirm by checking CloudTrail and talking to the role's owner. Then either remove S3 permissions entirely or scope them to specific buckets and operations actually needed.",bad:"Not quite. You can't delete immediately without investigation — the role might be used by an automated process that runs infrequently. And leaving it alone perpetuates the sprawl. The correct approach: investigate → confirm unused → right-size or remove."},
+  3:{good:"Correct. The safe sequence uses observability (CloudTrail 90 days) to build a minimal policy based on evidence, tests in staging, then applies a permission boundary in production as a safety net before swapping the policy — with monitoring to catch any gaps.",bad:"Not quite. Replacing permissions immediately in production and using AccessDenied errors as feedback is operationally risky — it will break production. The safe approach builds the minimal policy from CloudTrail evidence, tests it, then applies it with monitoring."}
+};
+let state=loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
+function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
+function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));document.getElementById('score-val').textContent=state.correct.length+' / 4';document.getElementById('lab-score-val').textContent=state.checks.filter(Boolean).length;document.getElementById('pane-complete').classList.add('active');document.getElementById('topbar-title').textContent='Day 10 Complete!';document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
+function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
+function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
+function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
+function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
+function updateChecklist(){const total=6,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
+function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
+function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const paneEl=document.getElementById('pane-'+idx);if(!paneEl)return;const opts=paneEl.querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
+restoreState();
+</script>
+</body>
+</html>

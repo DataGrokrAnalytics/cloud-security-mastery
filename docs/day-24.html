@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 24 — Security Hub: CNAPP & Unified Risk Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#f05a5a;--accent-dim:rgba(240,90,90,.08);--amber:#f0924a;--violet:#8a7fff;--danger:#f05a5a;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w4:#f05a5a;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w4);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)}.tag-warning{color:var(--amber)}.tag-security{color:var(--accent)}.tag-lab{color:var(--lab)}.tag-arch{color:#4ab8d4}.tag-detect{color:var(--w4)}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}.lab-pane h1 em{color:var(--lab)}
+.lesson-pane h2{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;color:#e4eaf6;margin:32px 0 14px}
+.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+.lesson-pane ul,ol{padding-left:20px;margin-bottom:18px;color:#a0a8bc;line-height:1.9}
+.lesson-pane li{margin-bottom:4px}
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
+.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+.styled-table tr:hover td{background:rgba(255,255,255,.02)}
+.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--w4)}
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:var(--w4)}.code-block pre .hl2{color:var(--amber)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}
+.asff-block{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:20px 24px;margin:24px 0;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:2;color:#6a7490}
+.asff-block .k{color:var(--amber)}.asff-block .v{color:#7ec88c}.asff-block .sv{color:var(--w4)}.asff-block .n{color:var(--violet)}
+.cnapp-diagram{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:24px 28px;margin:24px 0;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:2.2;color:#6a7490}
+.cnapp-diagram .node{color:#e4eaf6}.cnapp-diagram .arrow{color:var(--faint)}.cnapp-diagram .hub{color:var(--w4);font-weight:600}
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--w4);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{background:var(--surface2);border:1px solid var(--border-hi);border-radius:7px;padding:12px 16px;cursor:pointer;font-size:13.5px;color:#9aa3ba;line-height:1.5;text-align:left;transition:all .15s}
+.kcheck-opt:hover:not(.disabled){border-color:var(--w4);color:var(--text);background:rgba(240,90,90,.06)}
+.kcheck-opt.correct{border-color:#3ecfcf;background:rgba(62,207,207,.08);color:#3ecfcf}
+.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.08);color:var(--danger)}
+.kcheck-opt.reveal-correct{border-color:#3ecfcf;background:rgba(62,207,207,.06);color:#3ecfcf;opacity:.7}
+.kcheck-opt.disabled{cursor:default}
+.kcheck-feedback{font-size:13px;line-height:1.6;padding:12px 14px;border-radius:6px;margin-top:12px;display:none}
+.kcheck-feedback.show{display:block}
+.kcheck-feedback.good{background:rgba(62,207,207,.08);color:#3ecfcf;border:1px solid rgba(62,207,207,.2)}
+.kcheck-feedback.bad{background:rgba(240,90,90,.07);color:#f08080;border:1px solid rgba(240,90,90,.2)}
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;position:relative}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--lab-dim);border:1px solid rgba(240,200,74,.3);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--lab);flex-shrink:0}
+.step-connector{width:1px;background:var(--border);flex:1;margin:4px 0;min-height:24px}
+.step-content{flex:1;padding-bottom:32px}
+.step-title{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--text);margin-bottom:12px;letter-spacing:.02em}
+.step-body{font-size:14px;color:#9aa3ba;line-height:1.7}
+.step-body ol,.step-body ul{padding-left:18px;margin:8px 0}
+.step-body li{margin-bottom:6px}
+.step-body p{margin-bottom:12px}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:#c8d0e0}
+.checklist{display:flex;flex-direction:column;gap:8px;margin:20px 0 32px}
+.check-item{display:flex;align-items:flex-start;gap:14px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:border-color .15s}
+.check-item:hover{border-color:var(--border-hi)}
+.check-item.checked{border-color:rgba(240,200,74,.3);background:var(--lab-dim)}
+.check-box{width:18px;height:18px;border-radius:4px;border:1px solid var(--border-hi);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;transition:all .2s}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#9aa3ba;line-height:1.5}
+.check-text code{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:var(--pill);padding:1px 5px;border-radius:3px;color:#c8d0e0}
+.checklist-progress{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease;width:0%}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+.lesson-nav-footer{display:flex;gap:12px;margin-top:40px;padding-top:28px;border-top:1px solid var(--border)}
+.prev-btn,.next-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;padding:10px 22px;border-radius:6px;cursor:pointer;transition:all .15s}
+.prev-btn{background:transparent;border:1px solid var(--border-hi);color:var(--muted)}.prev-btn:hover{color:var(--text);border-color:var(--text)}
+.next-btn{background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:600}.next-btn:hover{opacity:.85}
+.lab-btn{background:var(--lab);border-color:var(--lab);color:#0d0f14}
+.completion-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:48px;text-align:center;max-width:520px;margin:0 auto}
+.completion-icon{font-size:48px;display:block;margin-bottom:20px}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;color:#e8eef8;margin-bottom:14px}
+.completion-card p{font-size:14px;color:#6a7490;line-height:1.7;margin-bottom:24px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,90,90,.1);border:1px solid rgba(240,90,90,.2);border-radius:20px;padding:7px 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--w4)}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:var(--lab-dim);border:1px solid rgba(240,200,74,.2);border-radius:20px;padding:7px 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--lab)}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 20px 60px}.lesson-topbar{padding:14px 20px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 4 · Day 24</div>
+    <h2>Security Hub: CNAPP &amp; Unified Risk Dashboard</h2>
+    <div class="sidebar-meta"><span class="chip">Intermediate</span><span class="chip">4 hours</span><span class="chip">CNAPP</span></div>
+  </div>
+  <nav class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">1</span><span class="nav-label">From Point Tools to CNAPP</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(1)"><span class="nav-num">2</span><span class="nav-label">AWS Security Finding Format</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(2)"><span class="nav-num">3</span><span class="nav-label">Security Hub Insights</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(3)"><span class="nav-num">4</span><span class="nav-label">Scores, Controls &amp; Prioritisation</span><span class="nav-check">✓</span></div>
+    <div class="nav-group-label">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)"><span class="nav-num">5</span><span class="nav-label">Hands-on: Build Your CNAPP Dashboard</span><span class="nav-check">✓</span></div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Day progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</aside>
+<main class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Week 4 &nbsp;/&nbsp; <span id="topbar-title">From Point Tools to CNAPP</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- PANE 0 -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-detect">☁ CNAPP Architecture</div>
+    <h1>From Point Tools<br>to <em>CNAPP</em></h1>
+    <p>Over the past three weeks you've enabled six separate AWS security services. Each one is excellent — but each lives in its own console, has its own finding format, and has no awareness of what the others are seeing.</p>
+    <p>A <strong>Critical GuardDuty finding</strong> on an instance that also has a <strong>Critical Inspector CVE</strong> is far more urgent than either finding alone. But right now, to know that correlation exists, you'd have to manually check two different consoles, match the resource ARN, and do the math yourself.</p>
+    <div class="callout insight"><div class="callout-title">🧠 The Core Problem</div>In a real environment with hundreds of findings per day across six services, manual correlation is impractical. You need an aggregation layer — one place where all findings land, in a common format, so you can query across sources and manage the full lifecycle in one interface.</div>
+    <h2>Security Hub as the Aggregation Layer</h2>
+    <p>Security Hub solves this by being the hub every integrated service sends findings to. Config, GuardDuty, Inspector, Macie, and Access Analyzer all route their findings to Security Hub using a standardised format. You see one dashboard, search across all sources simultaneously, and manage finding status (active, resolved, suppressed) in one place.</p>
+    <p>This is the architecture pattern Gartner calls a <strong>CNAPP</strong> — Cloud-Native Application Protection Platform. It's not a single product: it's how you stitch together CSPM (Config), CDR (GuardDuty), CWPP (Inspector), DLP (Macie), and CIEM (Access Analyzer) into a unified risk management layer.</p>
+    <div class="cnapp-diagram">
+      <span class="node">AWS Config</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">──┐</span><br>
+      <span class="node">Amazon GuardDuty</span> &nbsp;<span class="arrow">──┤</span><br>
+      <span class="node">Amazon Inspector</span> &nbsp;<span class="arrow">──┤</span> ASFF findings <span class="arrow">──▶</span> <span class="hub">Security Hub</span> <span class="arrow">──▶</span> <span class="node">Dashboard / Insights / SOAR</span><br>
+      <span class="node">Amazon Macie</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">──┤</span><br>
+      <span class="node">Access Analyzer</span> &nbsp;<span class="arrow">──┘</span>
+    </div>
+    <div class="callout tip"><div class="callout-title">💡 Business Context</div>This "single pane of glass" replaces the operational overhead of five separate consoles. For an organisation running multiple accounts and regions, Security Hub's cross-account aggregation means one central security team can see all findings across the entire AWS estate from a single dashboard.</div>
+    <div class="kcheck" id="pane-0-quiz">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A Critical GuardDuty finding fires on instance <code>i-0abc123</code>. A Critical Inspector finding also exists for <code>i-0abc123</code> (an RCE vulnerability). Without Security Hub, what is the most likely operational outcome?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)">Both findings are automatically correlated and a combined alert is sent to the SOC team.</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)">The GuardDuty finding is suppressed because Inspector already flagged the same instance.</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)">The two findings are reviewed separately by different team members who may not realise they share the same resource — the combined urgency is missed.</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)">Inspector automatically patches the CVE once GuardDuty detects active exploitation.</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()" disabled>← Previous</button><button class="next-btn" onclick="next()">Next →</button></div>
+  </div>
+
+  <!-- PANE 1 -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-concept">📋 Standards</div>
+    <h1>AWS Security<br><em>Finding Format</em></h1>
+    <p>The reason Security Hub can aggregate findings from radically different services is that every finding uses the same schema: the <strong>AWS Security Finding Format (ASFF)</strong>. Once normalised, a single query finds all HIGH findings across all sources — regardless of origin.</p>
+    <h2>Key ASFF Fields</h2>
+    <div class="asff-block">
+<span class="k">"SchemaVersion"</span>: <span class="v">"2018-10-08"</span>,<br>
+<span class="k">"Id"</span>: <span class="v">"arn:aws:guardduty:eu-west-1:123456789012:detector/abc/finding/def"</span>,<br>
+<span class="k">"ProductArn"</span>: <span class="v">"arn:aws:securityhub:...:product/aws/guardduty"</span>,  <span class="comment">// which service sent this</span><br>
+<span class="k">"AwsAccountId"</span>: <span class="v">"123456789012"</span>,<br>
+<span class="k">"Types"</span>: [<span class="v">"TTPs/Command and Control/Backdoor:EC2-C&CActivity.B"</span>],<br>
+<span class="k">"Severity"</span>: {<span class="k">"Label"</span>: <span class="sv">"HIGH"</span>, <span class="k">"Normalized"</span>: <span class="n">70</span>},  <span class="comment">// 0-100 normalised score</span><br>
+<span class="k">"Title"</span>: <span class="v">"EC2 instance communicating with known C2 server"</span>,<br>
+<span class="k">"Resources"</span>: [{<span class="k">"Type"</span>: <span class="v">"AwsEc2Instance"</span>, <span class="k">"Id"</span>: <span class="v">"i-0abc123"</span>}],<br>
+<span class="k">"Workflow"</span>: {<span class="k">"Status"</span>: <span class="sv">"NEW"</span>},  <span class="comment">// NEW → NOTIFIED → RESOLVED / SUPPRESSED</span><br>
+<span class="k">"RecordState"</span>: <span class="sv">"ACTIVE"</span>
+    </div>
+    <h2>Workflow Lifecycle</h2>
+    <table class="styled-table">
+      <thead><tr><th>Status</th><th>Meaning</th><th>When to use</th></tr></thead>
+      <tbody>
+        <tr><td>NEW</td><td>Not yet reviewed</td><td>Default on arrival</td></tr>
+        <tr><td>NOTIFIED</td><td>Ticket raised / team informed</td><td>After routing to ticketing system</td></tr>
+        <tr><td>SUPPRESSED</td><td>Intentionally ignored (false positive / accepted risk)</td><td>With documented justification</td></tr>
+        <tr><td>RESOLVED</td><td>Remediation confirmed complete</td><td>After verification, not just fix deployment</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warning"><div class="callout-title">⚠️ Common Anti-Pattern</div>Teams often bulk-suppress findings to "clean up" the dashboard without documenting why. This creates invisible accepted risk — future engineers see a clean dashboard and assume the environment is secure, not that someone suppressed 40 findings. Always require a justification comment when suppressing.</div>
+    <div class="kcheck" id="pane-1-quiz">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Your SOAR Lambda auto-remediates a public S3 bucket and calls <code>BatchUpdateFindings</code> to set workflow status to <code>RESOLVED</code>. Later that day, the same bucket is made public again. What does Security Hub do?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)">Security Hub ignores the new violation because the finding was already resolved.</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)">Security Hub creates a new finding with status NEW — the old resolved finding is separate from the new active violation.</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)">Security Hub re-opens the resolved finding and sets it back to NEW.</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)">Security Hub suppresses the finding because the resource was previously remediated.</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next →</button></div>
+  </div>
+
+  <!-- PANE 2 -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-security">📊 Operations</div>
+    <h1>Security Hub<br><em>Insights</em></h1>
+    <p>An <strong>Insight</strong> is a saved filter + groupBy combination — essentially a live dashboard widget within Security Hub. Over 100 built-in Insights exist, but the highest-value ones are custom-built for your environment.</p>
+    <div class="callout tip"><div class="callout-title">🔍 Insight 1 — Findings on the Same Resource from Multiple Services</div>Filter: RecordState = ACTIVE, WorkflowStatus = NEW &nbsp;|&nbsp; GroupBy: Resource ID<br><br><strong>Why:</strong> A resource in both GuardDuty (active threat) and Inspector (known CVE) is higher priority than either finding alone. Combined signal = higher confidence of active exploitation.</div>
+    <div class="callout tip"><div class="callout-title">🔍 Insight 2 — High Severity Findings Open More Than 7 Days</div>Filter: Severity = CRITICAL or HIGH, Created &lt; 7 days ago, WorkflowStatus = NEW &nbsp;|&nbsp; GroupBy: Resource ID<br><br><strong>Why:</strong> Week-old unresolved high findings indicate process failures, not just gaps. The first metric a CISO will ask about.</div>
+    <div class="callout tip"><div class="callout-title">🔍 Insight 3 — Failing CIS Benchmark Controls</div>Filter: Type starts with CIS, ComplianceStatus = FAILED &nbsp;|&nbsp; GroupBy: Title<br><br><strong>Why:</strong> Shows exactly which CIS controls you're failing and how many resources are affected — your prioritised remediation list.</div>
+    <div class="callout warning"><div class="callout-title">⚠️ Cross-Account Aggregation</div>In a real enterprise, Security Hub's <strong>delegated administrator</strong> feature centralises findings from multiple accounts into one master Security Hub. Member accounts send findings up; the security team reviews everything from one place — the architecture for organisations running dozens or hundreds of AWS accounts.</div>
+    <div class="kcheck" id="pane-2-quiz">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">You create a Security Hub Insight: GroupBy Resource ID, filter Severity = CRITICAL, RecordState = ACTIVE. Instance <code>i-0abc123</code> shows count = 3. What does this tell you?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)">The instance has a single Critical finding that has been re-detected 3 times.</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)">The instance has 3 distinct active Critical findings — potentially from different services — making it the highest-priority resource to investigate.</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)">Three different accounts have a Critical finding on instances with the same name.</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)">The finding has been suppressed 3 times without resolution.</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next →</button></div>
+  </div>
+
+  <!-- PANE 3 -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-arch">📈 Posture Measurement</div>
+    <h1>Scores, Controls<br>&amp; <em>Prioritisation</em></h1>
+    <p>Security Hub's Summary page shows a compliance score for each active standard — the percentage of controls currently passing. You've been building toward this number since Day 3.</p>
+    <table class="styled-table">
+      <thead><tr><th>Standard</th><th>Scope</th><th>Control Count</th><th>Target</th></tr></thead>
+      <tbody>
+        <tr><td>CIS AWS Foundations v1.4</td><td>IAM, logging, monitoring, networking</td><td>60+</td><td>&gt;85%</td></tr>
+        <tr><td>AWS Foundational Security Best Practices</td><td>AWS-specific controls across 20+ services</td><td>200+</td><td>&gt;80%</td></tr>
+        <tr><td>PCI DSS v3.2.1</td><td>Payment card data environment</td><td>130+</td><td>If in scope</td></tr>
+        <tr><td>NIST SP 800-53 Rev 5</td><td>US federal security controls</td><td>1000+</td><td>If in scope</td></tr>
+      </tbody>
+    </table>
+    <h2>How to Read a Failing Control</h2>
+    <p>Don't just look at the overall score — look at <em>which</em> controls are failing. In the Controls view: filter by standard → filter by severity Critical/High → sort by "failing resource count descending." This gives a prioritised remediation queue accounting for both severity and blast radius.</p>
+    <div class="callout insight"><div class="callout-title">💡 Score vs. Security</div>A high CIS score means you're compliant with the benchmark — it doesn't mean you're secure. The benchmark covers common baseline controls, not every possible attack vector. Use the score as a floor, not a ceiling. Threat modelling (Day 25) identifies risk the benchmark doesn't cover.</div>
+    <h2>Suppressing vs. Disabling Controls</h2>
+    <p>If a control is genuinely not applicable (e.g. a PCI DSS control when you don't process payments), <strong>disable</strong> it — document the reason. If a specific resource has a finding you've accepted as known risk, <strong>suppress</strong> just that finding for just that resource. Never disable a control simply to improve your score.</p>
+    <div class="kcheck" id="pane-3-quiz">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Your CIS score drops from 82% to 71% overnight. The Controls view shows EC2.6 (VPC flow logging) changed to FAILED. Which action correctly addresses this?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)">Disable the EC2.6 control — VPC flow logs are optional and the score drop is just noise.</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)">Suppress all EC2.6 findings to restore the score immediately while scheduling remediation.</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)">Enable VPC flow logs on the failing VPCs — the control correctly identified a real gap introduced by a new VPC not configured to your standard.</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)">Create a new VPC with flow logs enabled and delete the failing one to avoid the finding.</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next →</button></div>
+  </div>
+
+  <!-- PANE 4 — Lab -->
+  <div class="lesson-pane lab-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-on Lab</div>
+    <h1>Build Your<br><em>CNAPP Dashboard</em></h1>
+    <p>Verify all integrations are active, create three custom Insights that surface the most actionable risk, and record your current security scores for your portfolio.</p>
+    <div class="callout lab-note"><div class="callout-title">⚡ Free Tier Note</div>Security Hub has a 30-day free trial. After the trial, cost is per finding ingested and per compliance check — typically under $2/month for a learning account. Keep it running — it's your permanent risk dashboard.</div>
+    <div class="lab-steps">
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Verify All 5 Integrations Are Active <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <div class="code-block"><div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div><pre><span class="comment"># List all active Security Hub integrations</span>
+aws securityhub list-enabled-products-for-import \
+  --query <span class="str">"ProductSubscriptions"</span> \
+  --output table</pre></div>
+            <p>In the Security Hub console → <strong>Integrations</strong> tab, confirm these 5 are enabled: AWS Config, Amazon GuardDuty, Amazon Inspector, Amazon Macie, IAM Access Analyzer. For any missing: find the card → <strong>Accept findings</strong>.</p>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Review the Unified Findings Dashboard <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Security Hub → <strong>Findings</strong> → filter: Record state ACTIVE + Workflow status NEW</li>
+              <li>Sort by <strong>Severity</strong> — examine the top 10 findings</li>
+              <li>For your top 5: note which service generated it, which resource is affected, whether you can remediate today</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Create 3 Custom Insights <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~25 min</span></div>
+          <div class="step-body">
+            <p><strong>Insight 1 — High severity open &gt;7 days:</strong> Filter Severity = CRITICAL or HIGH + Created before 7 days ago + Workflow = NEW → GroupBy Resource ID → Name: <code>High-Severity Findings Open More Than 7 Days</code></p>
+            <p><strong>Insight 2 — Active findings by source:</strong> Filter Record state = ACTIVE + Workflow = NEW → GroupBy <strong>Product name</strong> → Name: <code>Active Findings by Source Service</code></p>
+            <p><strong>Insight 3 — Failing CIS controls:</strong> Filter Type starts with <code>Software and Configuration Checks/Industry and Regulatory Standards/CIS</code> + Compliance status = FAILED → GroupBy <strong>Title</strong> → Name: <code>CIS Benchmark Failing Controls</code></p>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">4</div></div>
+        <div class="step-content">
+          <div class="step-title">Record Your Security Scores &amp; Commit <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Security Hub → <strong>Summary</strong> tab → screenshot the full dashboard</li>
+              <li>Record: CIS score ___% | FSBP score ___% | Overall score ___%</li>
+              <li>Controls view → filter Critical/High failures → note top 3 failing controls</li>
+            </ol>
+            <div class="code-block"><div class="code-header"><span class="code-lang">bash — commit</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div><pre>git add screenshots/day-24-*.png
+git commit -m <span class="str">"Day 24: Security Hub CNAPP — 5 integrations, 3 custom insights, scores recorded"</span>
+git push</pre></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Lab Checklist</h2>
+    <div class="checklist-progress"><div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div><span class="checklist-progress-label" id="cl-label">0 / 7</span></div>
+    <div class="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">All 5 integrations active: Config, GuardDuty, Inspector, Macie, Access Analyzer</div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">Top 10 active findings reviewed — top 5 findings documented with source, resource, action</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">Custom Insight 1 created: <code>High-Severity Findings Open More Than 7 Days</code></div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">Custom Insight 2 created: <code>Active Findings by Source Service</code></div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">Custom Insight 3 created: <code>CIS Benchmark Failing Controls</code></div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">CIS, FSBP, and Overall scores recorded — top 3 failing controls identified</div></div>
+      <div class="check-item" onclick="toggleCheck(this,6)"><div class="check-box">✓</div><div class="check-text">Security Hub Summary dashboard screenshot committed to portfolio</div></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="finish()">Complete Day 24 ✓</button></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">🎯</span>
+      <h1>Day 24 Complete</h1>
+      <p>Your CNAPP is live — five services feeding one unified risk dashboard. Tomorrow: STRIDE threat modelling — systematically identifying the attack paths your controls are designed to defeat.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 7 complete</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="day-23.html" style="text-decoration:none"><button class="prev-btn">← Day 23</button></a>
+        <a href="day-25.html" style="text-decoration:none"><button class="next-btn">Day 25 →</button></a>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+<script>
+const STORAGE_KEY='csm-day24';const TOTAL=5;
+const titles=['From Point Tools to CNAPP','AWS Security Finding Format','Security Hub Insights','Scores, Controls & Prioritisation','Hands-on: Build Your CNAPP Dashboard'];
+const fb={
+  0:{good:"Correct. Without a shared aggregation layer, findings from each service are reviewed in isolation. It's entirely possible for one analyst to review the GuardDuty finding and another to review the Inspector finding — neither knowing the other exists. The combined signal (active threat + exploitable CVE on the same resource = likely active exploitation) is missed. Security Hub's resource-based correlation is specifically designed to surface this combined risk.",bad:"Not quite. GuardDuty and Inspector are independent services with no awareness of each other's findings. Without Security Hub aggregating both into a common format, there is no automatic correlation. Two analysts working from separate consoles may triage each finding independently and fail to recognise that the same instance appears in both — which is precisely the problem CNAPP architecture solves."},
+  1:{good:"Correct. Resolving a finding marks that specific finding instance as resolved — it doesn't create a policy that future violations are acceptable. When the bucket is made public again, Config or FSBP detects the new violation and generates a fresh finding with status NEW. Your SOAR pipeline will also fire again and re-remediate it — which is exactly what you want.",bad:"Not quite. Resolving a finding closes that specific finding record — it doesn't create an exemption for the resource. When the same resource has the same violation again, the integrated service generates a brand-new finding with status NEW. If your EventBridge SOAR rule is still active, it will fire again and auto-remediate the second occurrence too."},
+  2:{good:"Correct. A count of 3 for a specific Resource ID means 3 separate active Critical findings all reference that same resource — they could come from 3 different services (e.g. GuardDuty active C2 + Inspector critical CVE + Config security group finding). Three concurrent Critical findings on one resource is the definition of highest-priority investigation — this is the multi-source correlation Security Hub is designed to surface.",bad:"Not quite. The count in a Security Hub Insight represents distinct findings matching your filter, grouped by the selected dimension. A count of 3 for a specific Resource ID means 3 separate active Critical findings all reference that same resource — potentially from 3 different services. This multi-finding correlation is the core value of the GroupBy Resource ID insight."},
+  3:{good:"Correct. The control identified a genuine gap — a new VPC created without flow logging enabled, deviating from your security standard. The right response is to fix the actual gap: enable VPC flow logs on the non-compliant VPCs. The score drop is the system working correctly. Disabling or suppressing hides the gap; creating a replacement VPC is wasteful and doesn't fix the root cause (your VPC creation process doesn't enforce flow log enablement).",bad:"Not quite. The control identified a real gap — a new VPC missing flow logging. Disabling removes detection for all future VPCs. Suppressing maintains the gap while masking it. Creating a replacement VPC wastes resources and misses the root cause. The correct response: enable flow logs on the non-compliant VPCs, fix the root cause (add flow log enablement to your VPC creation runbook or IaC template), and let the score recover naturally."}
+};
+let state=loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
+function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
+function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/4*100);document.getElementById('score-val').textContent=state.correct.length+' / 4 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked;document.getElementById('pane-complete').classList.add('active');document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
+function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
+function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
+function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
+function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
+function updateChecklist(){const total=7,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
+function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
+function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const opts=document.querySelectorAll('#pane-'+idx+' .kcheck-opt');if(!opts.length)return;opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
+restoreState();
+</script>
+</body>
+</html>

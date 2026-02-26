@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 14 — Week 2 IAM Audit Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0f14; --surface:#13161d; --surface2:#181c26;
+  --border:#1f2330; --border-hi:#2e3447;
+  --text:#c8d0e0; --muted:#5a6178; --faint:#3a3f52;
+  --accent:#8a7fff; --accent-dim:rgba(138,127,255,.08);
+  --amber:#f0924a; --violet:#8a7fff; --danger:#f05a5a;
+  --code-bg:#0a0c10; --pill:#1a1f2e;
+  --lab:#f0c84a; --lab-dim:rgba(240,200,74,.08);
+  --w2:#8a7fff;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+
+/* ── Layout ── */
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w2);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}
+.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}
+.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+
+/* ── Topbar ── */
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
+.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.arrow-btn:disabled{opacity:.3;cursor:default}
+
+/* ── Lesson pane ── */
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Typography ── */
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)} .tag-warning{color:var(--amber)} .tag-security{color:var(--accent)} .tag-lab{color:var(--lab)} .tag-audit{color:#4af0c4} .tag-ops{color:var(--amber)}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}
+.lab-pane h1 em{color:var(--lab)}
+.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+
+/* ── Callouts ── */
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+
+/* ── Tables ── */
+.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
+.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+.styled-table tr:hover td{background:rgba(255,255,255,.02)}
+.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--violet);white-space:nowrap}
+.styled-table .you{color:var(--accent);font-weight:500} .styled-table .aws{color:var(--muted)}
+.styled-table .sev-c{color:var(--danger);font-weight:500} .styled-table .sev-h{color:var(--amber);font-weight:500}
+.styled-table .sev-m{color:#4af0c4;font-weight:500} .styled-table .sev-l{color:var(--muted)}
+
+/* ── Code ── */
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:#4af0c4} .code-block pre .hl2{color:var(--amber)} .code-block pre .hl3{color:var(--violet)} .code-block pre .comment{color:var(--muted)}
+
+/* ── Pillar grid ── */
+.pillar-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 0}
+.pillar-card{border:1px solid var(--border);border-radius:8px;padding:14px 16px;background:var(--surface2)}
+.pillar-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px}
+.pillar-title{font-size:13.5px;color:#e4eaf6;font-weight:500;margin-bottom:6px}
+.pillar-detail{font-size:12.5px;color:var(--muted);line-height:1.6}
+.pillar-tag{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--pill);border:1px solid var(--border-hi);border-radius:3px;padding:2px 7px;color:var(--violet);margin-top:6px}
+
+/* ── Audit flow ── */
+.audit-flow{display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:24px 0}
+.audit-row{display:grid;grid-template-columns:120px 1fr 1fr;gap:0;border-bottom:1px solid var(--border)}
+.audit-row:last-child{border-bottom:none}
+.audit-row:first-child{background:var(--surface)}
+.audit-cell{padding:11px 16px;font-size:13px;border-right:1px solid var(--border)}
+.audit-cell:last-child{border-right:none}
+.audit-cell.head{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.audit-cell.label{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--violet)}
+
+/* ── Knowledge check ── */
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--violet);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
+.kcheck-opt:hover:not(.disabled){border-color:var(--violet);background:rgba(138,127,255,.05);color:var(--text)}
+.kcheck-opt.correct{border-color:var(--accent);background:rgba(138,127,255,.07);color:var(--accent)}
+.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.07);color:var(--danger)}
+.kcheck-opt.reveal-correct{border-color:var(--accent);background:rgba(138,127,255,.04);color:#6e9090}
+.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
+.kcheck-opt.correct .opt-key{background:var(--accent);color:var(--bg)}
+.kcheck-opt.wrong .opt-key{background:var(--danger);color:#fff}
+.kcheck-opt.reveal-correct .opt-key{background:rgba(138,127,255,.2);color:var(--accent)}
+.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
+.kcheck-feedback.show{display:block}
+.kcheck-feedback.good{background:rgba(138,127,255,.08);border:1px solid rgba(138,127,255,.2);color:#a09ae0}
+.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
+
+/* ── Intermediate note ── */
+.level-badge{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;border-radius:3px;padding:3px 9px;margin-bottom:14px}
+.level-f{background:rgba(74,240,196,.08);border:1px solid rgba(74,240,196,.2);color:#4af0c4}
+.level-i{background:rgba(138,127,255,.08);border:1px solid rgba(138,127,255,.2);color:var(--violet)}
+
+/* ── Lab steps ── */
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border);position:relative}
+.lab-step:last-child{border-bottom:none}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .3s;position:relative;z-index:1}
+.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}
+.lab-step:last-child .step-connector{display:none}
+.lab-step.completed .step-num{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.step-content{flex:1;padding-top:4px}
+.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
+.step-body{font-size:14px;color:var(--text);line-height:1.7}
+.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.step-body ul{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.step-body li{color:#a0a8bc}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
+
+/* ── Checklist ── */
+.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
+.check-item:hover{border-color:var(--border-hi)}
+.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
+.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}
+.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+
+.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+
+/* ── Lesson nav footer ── */
+.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
+.next-btn{background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px}
+.next-btn:hover{opacity:.88}
+.next-btn.lab-btn{background:var(--lab)}
+.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s}
+.prev-btn:hover{color:var(--text);border-color:var(--text)}
+.prev-btn:disabled{opacity:.3;cursor:default}
+
+/* ── Assessment box ── */
+.assessment-box{border:1px solid var(--border-hi);border-radius:8px;overflow:hidden;margin:24px 0}
+.assessment-box-head{padding:12px 18px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;display:flex;align-items:center;gap:8px}
+.assessment-box.foundational .assessment-box-head{background:rgba(74,240,196,.06);color:#4af0c4;border-bottom:1px solid rgba(74,240,196,.15)}
+.assessment-box.intermediate .assessment-box-head{background:rgba(138,127,255,.06);color:var(--violet);border-bottom:1px solid rgba(138,127,255,.15)}
+.assessment-box-body{padding:18px 18px;font-size:14px;line-height:1.75;color:var(--text)}
+.assessment-box-body ol{padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.assessment-box-body li{color:#a0a8bc}
+
+/* ── Completion ── */
+.completion-card{text-align:center;padding:56px 32px}
+.completion-icon{font-size:48px;margin-bottom:20px;display:block}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
+.completion-card p{color:var(--muted);max-width:440px;margin:0 auto 28px;font-size:14px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(138,127,255,.1);border:1px solid rgba(138,127,255,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
+
+/* ── Scrollbar + responsive ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.pillar-grid{grid-template-columns:1fr}.lesson-topbar{padding:14px 24px}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── SIDEBAR ── -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 2 · Day 14</div>
+    <h2>Week 2 IAM Audit<br>Portfolio</h2>
+    <div class="sidebar-meta">
+      <span class="chip">Intermediate</span>
+      <span class="chip">4 lessons</span>
+      <span class="chip">1 lab</span>
+      <span class="chip">~4h</span>
+    </div>
+  </div>
+  <div class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)">
+      <span class="nav-num">01</span><span class="nav-label">The Five Pillars of an IAM Audit</span><span class="nav-check">✓</span>
+    </div>
+    <div class="nav-item" onclick="goTo(1)">
+      <span class="nav-num">02</span><span class="nav-label">Mapping Findings to CIS, NIST & SOC2</span><span class="nav-check">✓</span>
+    </div>
+    <div class="nav-item" onclick="goTo(2)">
+      <span class="nav-num">03</span><span class="nav-label">Risk Rating & Remediation SLAs</span><span class="nav-check">✓</span>
+    </div>
+    <div class="nav-item" onclick="goTo(3)">
+      <span class="nav-num">04</span><span class="nav-label">Automating the Audit with Boto3</span><span class="nav-check">✓</span>
+    </div>
+    <div class="nav-group-label" style="margin-top:8px">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)">
+      <span class="nav-num" style="color:var(--lab)">🔬</span><span class="nav-label">Hands-on: Complete Audit Suite</span><span class="nav-check">✓</span>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<div class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Day 14 &nbsp;/&nbsp; <span id="topbar-title">The Five Pillars of an IAM Audit</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- ══ LESSON 1 — Five Pillars ══ -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-audit">IAM Audit · Foundational</div>
+    <h1>The Five Pillars of<br>an <em>IAM Audit</em></h1>
+    <p>Day 14 is your Week 2 capstone. Rather than introducing new AWS services, you consolidate Days 8–13 into a single, structured output: an audit report that proves IAM mastery to a hiring manager or CISO.</p>
+    <p>A complete IAM audit covers five distinct pillars. Skipping any one leaves exploitable blind spots.</p>
+
+    <div class="pillar-grid">
+      <div class="pillar-card">
+        <div class="pillar-num">Pillar 01</div>
+        <div class="pillar-title">Policy Analysis</div>
+        <div class="pillar-detail">Are policies least-privilege? Wildcards present? Over-permissive actions?</div>
+        <div class="pillar-tag">IAM Policy Simulator</div>
+      </div>
+      <div class="pillar-card">
+        <div class="pillar-num">Pillar 02</div>
+        <div class="pillar-title">Entitlement Review</div>
+        <div class="pillar-detail">Who has external or cross-account access? Any internet-exposed resources?</div>
+        <div class="pillar-tag">IAM Access Analyzer</div>
+      </div>
+      <div class="pillar-card">
+        <div class="pillar-num">Pillar 03</div>
+        <div class="pillar-title">Credential Hygiene</div>
+        <div class="pillar-detail">Unused, unrotated, and dormant credentials — the silent attacker footholds.</div>
+        <div class="pillar-tag">Credentials Report</div>
+      </div>
+      <div class="pillar-card">
+        <div class="pillar-num">Pillar 04</div>
+        <div class="pillar-title">Privileged Access</div>
+        <div class="pillar-detail">Standing admin roles, SSH key exposure, and absence of JIT controls.</div>
+        <div class="pillar-tag">Session Manager + JIT</div>
+      </div>
+    </div>
+    <div class="pillar-card" style="margin-bottom:24px">
+      <div class="pillar-num">Pillar 05</div>
+      <div class="pillar-title">IaC Compliance</div>
+      <div class="pillar-detail">Pre-deploy security checks on CloudFormation and Terraform templates before they reach production.</div>
+      <div class="pillar-tag">Checkov</div>
+    </div>
+
+    <div class="callout breach">
+      <div class="callout-title">⚠ Real Breach — Capital One (2019)</div>
+      An attacker exploited a misconfigured WAF role (Pillar 1 failure) with an over-permissive <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--danger);background:var(--pill);padding:1px 5px;border-radius:3px">s3:*</code> action. A proper policy analysis audit run months earlier would have flagged the wildcard before the breach occurred.
+    </div>
+
+    <div class="callout insight">
+      <div class="callout-title">💡 Why All Five Matter</div>
+      Real-world entitlement abuse chains multiple pillars: a dormant credential (Pillar 3) with admin access (Pillar 4) that was never deployed through a secure IaC pipeline (Pillar 5). Auditing one pillar alone misses the chain.
+    </div>
+
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A Lambda function's execution role has <code style="font-family:'IBM Plex Mono',monospace;color:var(--violet)">s3:*</code> on all buckets. Which audit pillar catches this before the function is deployed to production?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">A</span>Credential Hygiene — the Lambda role is a credential and should be in the rotation report</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">B</span>Entitlement Review — Access Analyzer would flag the cross-account access</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)"><span class="opt-key">C</span>IaC Compliance — Checkov scans the CloudFormation template and flags the wildcard action before deployment</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">D</span>Policy Analysis — the IAM Policy Simulator would test the action post-deployment</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+
+    <div class="lesson-nav-footer">
+      <button class="prev-btn" disabled>← Previous</button>
+      <button class="next-btn" onclick="next()">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ══ LESSON 2 — Framework Mapping ══ -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-concept">Frameworks · Foundational</div>
+    <h1>Mapping Findings to<br><em>CIS, NIST & SOC2</em></h1>
+    <p>A finding that isn't mapped to a compliance standard is opinion. One that is mapped is evidence. Auditors, customers, and regulators don't read your instincts — they read control IDs.</p>
+
+    <table class="styled-table">
+      <thead>
+        <tr><th>Standard</th><th>Key IAM Controls</th><th>Where it shows up</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>CIS AWS v1.4</td>
+          <td>1.4 — No root access keys<br>1.10 — MFA on console users<br>1.12 — Credentials unused 45d<br>1.14 — Keys rotated every 90d<br>1.16 — No admin policies on users</td>
+          <td class="you">Security Hub → CIS Benchmark findings (auto-mapped)</td>
+        </tr>
+        <tr>
+          <td>NIST 800-53</td>
+          <td>AC-2 — Account management<br>AC-6 — Least privilege<br>AC-17 — Remote access controls<br>IA-5 — Authenticator management</td>
+          <td class="you">Required for FedRAMP; common in enterprise RFPs</td>
+        </tr>
+        <tr>
+          <td>SOC2 CC6</td>
+          <td>CC6.1 — Logical access security<br>CC6.2 — New access provisioning<br>CC6.3 — Access removal</td>
+          <td class="you">Customer trust audits — required for B2B SaaS sales</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout tip">
+      <div class="callout-title">✓ Practical Habit</div>
+      Every finding in your audit report should include its control ID. Example: <em>"CIS 1.14 / NIST IA-5: Access key for user svc-deploy has not been rotated in 127 days. Remediate by [date]."</em> This signals to auditors that you speak their language.
+    </div>
+
+    <div class="callout insight">
+      <div class="callout-title">💡 SOC2 CC6.3 in Practice</div>
+      CC6.3 requires you to remove access when it's no longer needed. The IAM Credentials Report is your primary evidence: it shows dormant users, when you identified them, and — after remediation — that they were disabled. Auditors look for this loop: identify → act → evidence.
+    </div>
+
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Your audit finds a user who hasn't logged in for 120 days but still has an active access key. Which CIS control does this directly violate?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">A</span>CIS 1.4 — Ensure no root account access keys exist</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">B</span>CIS 1.10 — Ensure MFA is enabled for all IAM users with console access</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)"><span class="opt-key">C</span>CIS 1.12 — Ensure credentials unused for 45 days or more are disabled</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">D</span>CIS 1.16 — Ensure IAM policies are attached only to groups or roles, not users</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+
+    <div class="lesson-nav-footer">
+      <button class="prev-btn" onclick="prev()">← Previous</button>
+      <button class="next-btn" onclick="next()">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ══ LESSON 3 — Risk Rating ══ -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-warning">Risk Ratings · Intermediate</div>
+    <h1>Risk Rating &<br><em>Remediation SLAs</em></h1>
+    <p>Not all findings are equal. A professional audit ranks each by <strong>Risk = Likelihood × Impact</strong>, then assigns a non-negotiable remediation deadline. This is what separates a security checklist from a business deliverable.</p>
+
+    <table class="styled-table">
+      <thead><tr><th>Severity</th><th>Example Finding</th><th>SLA</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="sev-c">Critical</td>
+          <td>Root account used in the last 30 days with an active access key</td>
+          <td>24 hours</td>
+        </tr>
+        <tr>
+          <td class="sev-h">High</td>
+          <td>Active IAM admin user with <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 5px;border-radius:3px;color:var(--violet)">AdministratorAccess</code> and no MFA enabled</td>
+          <td>72 hours</td>
+        </tr>
+        <tr>
+          <td class="sev-m">Medium</td>
+          <td>Unused IAM role with S3 wildcard action, inactive for 90 days</td>
+          <td>2 weeks</td>
+        </tr>
+        <tr>
+          <td class="sev-l">Low</td>
+          <td>Password policy missing symbol-character requirement</td>
+          <td>30 days</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>A finding entry in your report must answer five questions:</p>
+
+    <div class="audit-flow">
+      <div class="audit-row">
+        <div class="audit-cell head">Field</div>
+        <div class="audit-cell head">What to write</div>
+        <div class="audit-cell head">Example</div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-cell label">What it is</div>
+        <div class="audit-cell">Plain-language description of the misconfiguration</div>
+        <div class="audit-cell" style="color:var(--muted);font-size:12.5px">svc-deploy has iam:PassRole on all resources (*)</div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-cell label">Why it matters</div>
+        <div class="audit-cell">Business risk, blast radius, regulation</div>
+        <div class="audit-cell" style="color:var(--muted);font-size:12.5px">Allows privilege escalation to any role in the account — full compromise</div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-cell label">Exact fix</div>
+        <div class="audit-cell">Specific remediation command or console path</div>
+        <div class="audit-cell" style="color:var(--muted);font-size:12.5px">Scope PassRole to arn:aws:iam::*:role/deploy-* only</div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-cell label">Owner</div>
+        <div class="audit-cell">Which team or person is responsible</div>
+        <div class="audit-cell" style="color:var(--muted);font-size:12.5px">Platform Engineering team</div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-cell label">By when</div>
+        <div class="audit-cell">SLA date derived from severity</div>
+        <div class="audit-cell" style="color:var(--muted);font-size:12.5px">Critical → within 24 hours of report delivery</div>
+      </div>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-title">⚠ Common Mistake</div>
+      Listing findings without remediation steps is a checklist, not an audit. Every finding needs all five fields. A CISO cannot action "iam:PassRole on *" — they need the exact scope change, the owner, and the deadline.
+    </div>
+
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">An active admin user with <code style="font-family:'IBM Plex Mono',monospace;color:var(--violet)">AdministratorAccess</code> has no MFA and logged in two days ago. What is the correct severity and SLA?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">A</span>Low — the user is actively logging in, proving it's a legitimate account</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">B</span>Medium — MFA can be added without urgency since the account is in active use</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)"><span class="opt-key">C</span>High — active admin without MFA; one phished password gives full account access. Remediate within 72 hours.</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">D</span>Critical — only if the user also has an active access key with no expiry</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+
+    <div class="lesson-nav-footer">
+      <button class="prev-btn" onclick="prev()">← Previous</button>
+      <button class="next-btn" onclick="next()">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ══ LESSON 4 — Boto3 Automation ══ -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-ops">Automation · Intermediate</div>
+    <h1>Automating the Audit<br>with <em>Boto3</em></h1>
+    <p>Manual audits don't scale past a handful of users. At 50+ IAM identities, automation is mandatory. Two built-in AWS sources cover most of the credential hygiene pillar automatically.</p>
+
+    <p><strong>Source 1 — IAM Credentials Report</strong><br>Generated on-demand, this CSV covers every IAM user: password age, access key age, last-used dates, and MFA status. It maps directly to CIS 1.10, 1.12, and 1.14.</p>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">python · flag dormant credentials</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="hl">import</span> boto3, csv
+<span class="hl">from</span> datetime <span class="hl">import</span> datetime, timezone, timedelta
+
+iam = boto3.client(<span class="hl2">'iam'</span>)
+iam.generate_credential_report()
+report = iam.get_credential_report()[<span class="hl2">'Content'</span>].decode()
+threshold = timedelta(days=<span class="hl2">90</span>)
+
+<span class="hl">for</span> row <span class="hl">in</span> csv.DictReader(report.splitlines()):
+    last_used = row[<span class="hl2">'password_last_used'</span>]
+    <span class="hl">if</span> last_used <span class="hl">not in</span> (<span class="hl2">'N/A'</span>, <span class="hl2">'no_information'</span>):
+        age = datetime.now(timezone.utc) - datetime.fromisoformat(last_used)
+        <span class="hl">if</span> age > threshold:
+            <span class="comment"># CIS 1.12 violation — log to findings register</span>
+            print(f<span class="hl2">"DORMANT [{age.days}d]: {row['user']}"</span>)</pre>
+    </div>
+
+    <p><strong>Source 2 — Access Analyzer Findings API</strong><br>Access Analyzer continuously monitors for external and cross-account access. Export its findings to CSV as your Entitlement Review evidence. Both sources feed directly into your Findings Register.</p>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">python · export analyzer findings</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre>analyzer = boto3.client(<span class="hl2">'accessanalyzer'</span>, region_name=<span class="hl2">'us-east-1'</span>)
+
+<span class="comment"># List all active analyzers first</span>
+analyzers = analyzer.list_analyzers()[<span class="hl2">'analyzers'</span>]
+
+<span class="hl">for</span> a <span class="hl">in</span> analyzers:
+    findings = analyzer.list_findings(
+        analyzerArn=a[<span class="hl2">'arn'</span>],
+        filter={<span class="hl2">'status'</span>: {<span class="hl2">'eq'</span>: [<span class="hl2">'ACTIVE'</span>]}}
+    )[<span class="hl2">'findings'</span>]
+    <span class="hl">for</span> f <span class="hl">in</span> findings:
+        print(f[<span class="hl2">'resourceType'</span>], f[<span class="hl2">'condition'</span>], f[<span class="hl2">'isPublic'</span>])</pre>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">✓ Portfolio Tip</div>
+      Save both script outputs as files in your GitHub repo: <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 5px;border-radius:3px;color:var(--violet)">evidence/day14-dormant-credentials.txt</code> and <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 5px;border-radius:3px;color:var(--violet)">evidence/day14-access-analyzer-findings.csv</code>. These are exactly the artefacts a cloud security auditor produces on day one of an engagement.
+    </div>
+
+    <!-- Assessment block inside lesson 4 -->
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:36px 0 16px;font-weight:400">Assessments</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Complete these as written work to include in your portfolio. Use the hints only if you're stuck for more than 10 minutes.</p>
+
+    <div class="assessment-box foundational">
+      <div class="assessment-box-head">🌱 Foundational Assessment</div>
+      <div class="assessment-box-body">
+        <ol>
+          <li>Name the five IAM audit pillars and give one AWS service and one compliance standard for each.</li>
+          <li>Explain in plain English what the IAM Credentials Report contains and why it matters for a SOC2 CC6.3 audit.</li>
+          <li>Write a one-paragraph executive summary for this finding: "4 of 12 IAM users have not logged in for 120+ days and retain active access keys." Include the business risk, the regulation, and the cost-to-fix estimate.</li>
+        </ol>
+        <div class="callout tip" style="margin-top:16px;margin-bottom:0">
+          <div class="callout-title">💡 Hint for item 3</div>
+          Ask yourself three questions: What data is at risk if one of these keys is phished? What regulation requires you to disable dormant accounts? How many engineering hours does it take to run a <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 5px;border-radius:3px;color:var(--violet)">aws iam update-login-profile --no-password-reset-required</code> on four accounts? Answer those in 3–4 sentences.
+        </div>
+      </div>
+    </div>
+
+    <div class="assessment-box intermediate" style="margin-top:16px">
+      <div class="assessment-box-head">⚡ Intermediate Assessment</div>
+      <div class="assessment-box-body">
+        <ol>
+          <li>Write a complete findings register entry (ID, severity, CIS control, description, business impact, exact fix, owner, SLA) for an IAM role with <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 5px;border-radius:3px;color:var(--violet)">iam:PassRole</code> scoped to <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 5px;border-radius:3px;color:var(--violet)">Resource: "*"</code>.</li>
+          <li>Explain why <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 5px;border-radius:3px;color:var(--violet)">iam:PassRole</code> with <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 5px;border-radius:3px;color:var(--violet)">Resource: "*"</code> is a privilege escalation path even if the role has no other admin permissions.</li>
+          <li>Describe how Checkov and IAM Access Analyzer complement each other — what gaps does each leave that the other fills?</li>
+        </ol>
+        <div class="callout insight" style="margin-top:16px;margin-bottom:0">
+          <div class="callout-title">💡 Hint for item 2</div>
+          If you can <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 5px;border-radius:3px;color:var(--violet)">iam:PassRole</code> any role to a new EC2 instance — what role would you pass? Then what actions does that role allow you to take once the instance is running? Work through the chain from PassRole to full account access.
+        </div>
+      </div>
+    </div>
+
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Which AWS service generates an on-demand CSV listing every IAM user's password last-used date, access key age, rotation date, and MFA status?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">A</span>AWS Security Hub — it aggregates all IAM findings from multiple services</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">B</span>IAM Access Analyzer — it reports on external and cross-account access patterns</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)"><span class="opt-key">C</span>IAM Credentials Report — generated via Console or <code style="font-family:'IBM Plex Mono',monospace">aws iam generate-credential-report</code></button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">D</span>AWS Config — it tracks resource configuration history across all supported types</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+
+    <div class="lesson-nav-footer">
+      <button class="prev-btn" onclick="prev()">← Previous</button>
+      <button class="next-btn lab-btn" onclick="next()">Start Lab →</button>
+    </div>
+  </div>
+
+  <!-- ══ LAB ══ -->
+  <div class="lesson-pane lab-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-On Lab</div>
+    <h1>Complete<br><em>Audit Suite</em></h1>
+    <p>Work through each step in sequence. Every step produces an artefact you commit to GitHub at the end. Keep your AWS console and a terminal open alongside this page.</p>
+
+    <div class="callout lab-note">
+      <div class="callout-title">⚡ Before You Start</div>
+      This is a consolidation lab — you are not creating new resources, only auditing and documenting what you built in Days 8–13. No new services means no new charges.
+    </div>
+
+    <div class="lab-steps">
+
+      <div class="lab-step" id="step-0">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Generate the IAM Credentials Report <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Console: <strong>IAM → Credential Report → Generate report → Download CSV</strong></li>
+              <li>Or CLI: <code>aws iam generate-credential-report</code> then <code>aws iam get-credential-report --output text --query Content | base64 -d > credentials-report.csv</code></li>
+              <li>Open the CSV and highlight any row where <code>password_last_used</code> is older than 45 days or <code>mfa_active</code> is <code>false</code></li>
+              <li>Save as <code>evidence/day14-credentials-report.csv</code></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab-step" id="step-1">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Export Access Analyzer Findings <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Console: <strong>IAM → Access Analyzer → Active findings → Export to CSV</strong></li>
+              <li>Take a screenshot of the findings dashboard showing the count of active findings</li>
+              <li>Save CSV as <code>evidence/day14-access-analyzer-findings.csv</code> and screenshot as <code>evidence/day14-access-analyzer.png</code></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab-step" id="step-2">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Capture Security Hub CIS IAM Controls <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Console: <strong>Security Hub → CIS AWS Foundations → Filter by FAILED → filter controls 1.x only</strong></li>
+              <li>Screenshot the filtered list showing your current pass/fail counts</li>
+              <li>Save as <code>evidence/day14-security-hub-iam.png</code></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab-step" id="step-3">
+        <div class="step-num-wrap"><div class="step-num">4</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Run Checkov on Your Week 2 Templates <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Terminal: <code>checkov -f week-2/labs/day-11-vpc.yaml --framework cloudformation -o json > evidence/day14-checkov-results.json</code></li>
+              <li>Note the count of PASSED vs FAILED checks in the JSON output</li>
+              <li>If Checkov is not installed: <code>pip install checkov</code></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab-step" id="step-4">
+        <div class="step-num-wrap"><div class="step-num">5</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Write the IAM Audit Report <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~45 min · Main deliverable</span></div>
+          <div class="step-body">
+            <p>Create <code>portfolio/week2-iam-audit-report.md</code> with three sections:</p>
+            <ul>
+              <li><strong>Executive Summary</strong> — 3 headlines for a CISO: risk posture, regulatory exposure, remediation cost</li>
+              <li><strong>Findings Register</strong> — Table: ID | Severity | CIS Control | Description | Business Impact | Fix | Owner | SLA. Minimum 5 findings from your evidence above.</li>
+              <li><strong>Technical Appendix</strong> — Links to all evidence files collected in Steps 1–4</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab-step" id="step-5">
+        <div class="step-num-wrap"><div class="step-num">6</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Commit Week 2 GitHub Portfolio <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min</span></div>
+          <div class="step-body">
+            <div class="code-block" style="margin-top:8px">
+              <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre>git add evidence/ portfolio/week2-iam-audit-report.md
+git commit -m <span class="hl2">"Day 14: Week 2 IAM Audit Portfolio — 5 findings documented"</span>
+git push</pre>
+            </div>
+            <p style="font-size:13px;color:#8a92a8;margin-top:8px">Update your README.md Week 2 progress badge to ✅ and screenshot your GitHub commit history for the portfolio.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /lab-steps -->
+
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Completion Checklist</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Tick each item as you complete it.</p>
+
+    <div class="checklist-progress">
+      <div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div>
+      <span class="checklist-progress-label" id="cl-label">0 / 7</span>
+    </div>
+
+    <div class="checklist" id="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">IAM Credentials Report CSV downloaded and dormant users identified</div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">Access Analyzer findings exported to CSV with dashboard screenshot</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">Security Hub CIS IAM controls screenshot captured (1.x controls filtered)</div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">Checkov scan JSON output saved for Week 2 CloudFormation template</div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">IAM Audit Report written with Executive Summary, Findings Register (≥ 5 findings), and Technical Appendix</div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">Week 2 GitHub commit pushed and README badge updated to ✅</div></div>
+      <div class="check-item" onclick="toggleCheck(this,6)"><div class="check-box">✓</div><div class="check-text">All temporary Week 2 resources cleaned up (no unexpected charges)</div></div>
+    </div>
+
+    <div class="lesson-nav-footer">
+      <button class="prev-btn" onclick="prev()">← Previous</button>
+      <button class="next-btn lab-btn" onclick="finish()">Complete Day 14 ✓</button>
+    </div>
+  </div>
+
+  <!-- ══ COMPLETION ══ -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">🗂️</span>
+      <h1>Week 2 Complete</h1>
+      <p>You have consolidated Zero Trust, CIEM, JIT, IaC scanning, and privileged access into a CISO-ready IAM audit portfolio. Week 3 begins with VPC Network Foundation.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> checklist items</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+        <button class="prev-btn" onclick="goTo(0);resetAll()">↩ Review</button>
+        <a href="../../index.html" style="text-decoration:none"><button class="next-btn" style="background:var(--pill);color:var(--muted);border:1px solid var(--border-hi)">← Course Index</button></a>
+        <a href="../../week-3/lessons/day-15.html"><button class="next-btn lab-btn">Week 3 →</button></a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+const STORAGE_KEY = 'csm-day14';
+const TOTAL = 5; // 4 lessons + 1 lab
+const titles = [
+  'The Five Pillars of an IAM Audit',
+  'Mapping Findings to CIS, NIST & SOC2',
+  'Risk Rating & Remediation SLAs',
+  'Automating the Audit with Boto3',
+  'Hands-on: Complete Audit Suite'
+];
+
+const fb = {
+  0:{
+    good:"Correct. IaC Compliance uses Checkov to scan CloudFormation and Terraform templates pre-deployment. This catches wildcard actions before they ever reach a running resource — mapping to PCI DSS 6.4.3. The Policy Simulator (Pillar 1) tests live policies, not templates.",
+    bad:"Not quite. The key phrase is 'before the function is deployed to production.' Checkov (IaC Compliance) catches this at the template stage. Access Analyzer monitors running resources, not code yet to be deployed."
+  },
+  1:{
+    good:"Correct. CIS 1.12 states that credentials unused for 45 days or more must be disabled. 120 days of inactivity is a clear violation. Security Hub flags this automatically when the CIS Benchmark is enabled.",
+    bad:"Not quite. CIS 1.4 covers root access keys, 1.10 covers MFA, and 1.16 covers policy attachment scope. The control for dormant credentials — unused for 45+ days — is CIS 1.12."
+  },
+  2:{
+    good:"Correct. An active admin without MFA is a High finding — CIS 1.10 violation — with a 72-hour remediation SLA. The fix is to enforce MFA via an IAM condition or disable console access until MFA is configured. It would only reach Critical if the user also had an active access key with no MFA bypass controls at all.",
+    bad:"Not quite. 'Active use' doesn't reduce the risk — it means the account is being targeted by phishing. AdministratorAccess without MFA means one stolen password equals full account compromise. The severity is High with a 72-hour SLA."
+  },
+  3:{
+    good:"Correct. The IAM Credentials Report is generated on-demand via the IAM console or the CLI. It is the primary data source for the Credential Hygiene pillar, covering CIS controls 1.10, 1.12, and 1.14 in a single exportable CSV.",
+    bad:"Not quite. Security Hub aggregates findings but doesn't generate raw credential data. Access Analyzer covers external access patterns, not credential ages. Config tracks resource configuration history. The Credentials Report is the dedicated per-user credential snapshot."
+  }
+};
+
+let state = loadState();
+
+function loadState(){
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if(s) return JSON.parse(s);
+  } catch(e){}
+  return {current:0, done:[], correct:[], answered:[], checks:[]};
+}
+
+function saveState(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+}
+
+function goTo(n){
+  document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  state.current = n;
+  document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');
+  const items = document.querySelectorAll('.nav-item');
+  if(items[n]) items[n].classList.add('active');
+  document.getElementById('topbar-title').textContent = titles[n]||'Complete';
+  document.getElementById('btn-prev').disabled = (n===0);
+  document.getElementById('btn-next').disabled = (n>=TOTAL-1);
+  window.scrollTo(0,0);
+  saveState();
+  updateProgress();
+}
+
+function next(){ if(state.current<TOTAL-1) goTo(state.current+1); }
+function prev(){ if(state.current>0) goTo(state.current-1); }
+
+function finish(){
+  markDone(state.current);
+  document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  const pct = Math.round(state.correct.length/4*100);
+  document.getElementById('score-val').textContent = state.correct.length+' / 4 ('+pct+'%)';
+  const checked = state.checks.filter(Boolean).length;
+  document.getElementById('lab-score-val').textContent = checked+' / 7';
+  document.getElementById('pane-complete').classList.add('active');
+  document.getElementById('topbar-title').textContent = 'Complete';
+  document.getElementById('btn-prev').disabled = true;
+  document.getElementById('btn-next').disabled = true;
+  saveState();
+}
+
+function markDone(n){
+  if(!state.done.includes(n)) state.done.push(n);
+  const items = document.querySelectorAll('.nav-item');
+  if(items[n]) items[n].classList.add('done');
+  updateProgress();
+}
+
+function updateProgress(){
+  const count = state.done.length;
+  document.getElementById('progress-pct').textContent = count+' / '+TOTAL;
+  document.getElementById('progress-fill').style.width = (count/TOTAL*100)+'%';
+}
+
+function check(btn, isCorrect, idx){
+  if(state.answered.includes(idx)) return;
+  state.answered.push(idx);
+  const opts = btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');
+  opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none'});
+  const fbEl = document.getElementById('fb-'+idx);
+  if(isCorrect){
+    btn.classList.add('correct');
+    fbEl.className='kcheck-feedback show good';
+    fbEl.textContent='✓ '+fb[idx].good;
+    if(!state.correct.includes(idx)) state.correct.push(idx);
+  } else {
+    btn.classList.add('wrong');
+    fbEl.className='kcheck-feedback show bad';
+    fbEl.textContent='✗ '+fb[idx].bad;
+    opts.forEach(o=>{ if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true')) o.classList.add('reveal-correct'); });
+  }
+  markDone(idx);
+  saveState();
+}
+
+function toggleCheck(el, idx){
+  if(!state.checks[idx]) state.checks[idx] = false;
+  state.checks[idx] = !state.checks[idx];
+  el.classList.toggle('checked', state.checks[idx]);
+  updateChecklist();
+  saveState();
+}
+
+function updateChecklist(){
+  const total = 7;
+  const checked = state.checks.filter(Boolean).length;
+  document.getElementById('cl-fill').style.width = (checked/total*100)+'%';
+  document.getElementById('cl-label').textContent = checked+' / '+total;
+  if(checked===total && !state.done.includes(4)) markDone(4);
+}
+
+function copyCode(btn){
+  const pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(()=>{
+    btn.textContent='copied!'; setTimeout(()=>btn.textContent='copy',1500);
+  });
+}
+
+function resetAll(){
+  state = {current:0, done:[], correct:[], answered:[], checks:[]};
+  saveState();
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('done'));
+  document.querySelectorAll('.kcheck-opt').forEach(o=>{o.classList.remove('correct','wrong','reveal-correct','disabled');o.style.pointerEvents='';});
+  document.querySelectorAll('.kcheck-feedback').forEach(f=>{f.className='kcheck-feedback';f.textContent='';});
+  document.querySelectorAll('.check-item').forEach(i=>i.classList.remove('checked'));
+  updateChecklist();
+  updateProgress();
+  goTo(0);
+}
+
+function restoreState(){
+  state.done.forEach(n=>{
+    const items = document.querySelectorAll('.nav-item');
+    if(items[n]) items[n].classList.add('done');
+  });
+  state.answered.forEach(idx=>{
+    const opts = document.querySelectorAll(`#pane-${idx} .kcheck-opt`);
+    opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none'});
+    const correctOpt = Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));
+    const fbEl = document.getElementById('fb-'+idx);
+    if(state.correct.includes(idx)){
+      if(correctOpt) correctOpt.classList.add('correct');
+      if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}
+    } else {
+      opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true')) o.classList.add('reveal-correct')});
+      if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}
+    }
+  });
+  state.checks.forEach((v,i)=>{
+    if(v){
+      const items = document.querySelectorAll('.check-item');
+      if(items[i]) items[i].classList.add('checked');
+    }
+  });
+  updateChecklist();
+  updateProgress();
+  goTo(state.current||0);
+}
+
+restoreState();
+</script>
+</body>
+</html>

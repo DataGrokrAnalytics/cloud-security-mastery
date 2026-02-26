@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 12 — Privileged Access Workstations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#8a7fff;--accent-dim:rgba(138,127,255,.08);--amber:#f0924a;--violet:#8a7fff;--danger:#f05a5a;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w2:#8a7fff;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w2);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)}.tag-warning{color:var(--amber)}.tag-security{color:var(--accent)}.tag-lab{color:var(--lab)}.tag-ops{color:#f0c84a}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}.lab-pane h1 em{color:var(--lab)}
+.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 0}
+.compare-card{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.compare-header{padding:12px 16px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.compare-header.bad{background:rgba(240,90,90,.08);color:var(--danger);border-bottom:1px solid rgba(240,90,90,.2)}
+.compare-header.good{background:rgba(138,127,255,.08);color:var(--violet);border-bottom:1px solid rgba(138,127,255,.2)}
+.compare-body{padding:14px 16px;font-size:13px;color:#8a92a8;line-height:1.7}
+.compare-body li{list-style:none;padding-left:0;margin-bottom:4px}
+.compare-body li::before{margin-right:8px}
+.compare-body.bad li::before{content:'✗';color:var(--danger)}
+.compare-body.good li::before{content:'✓';color:var(--accent)}
+.arch-flow{display:flex;flex-direction:column;gap:0;margin:24px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.arch-row{display:grid;grid-template-columns:48px 1fr;align-items:center;border-bottom:1px solid var(--border)}
+.arch-row:last-child{border-bottom:none}
+.arch-row:hover{background:rgba(255,255,255,.02)}
+.arch-icon{font-size:20px;text-align:center;padding:14px 0;background:var(--surface);border-right:1px solid var(--border)}
+.arch-body{padding:14px 20px}
+.arch-title{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);margin-bottom:4px}
+.arch-desc{font-size:13px;color:#8a92a8;line-height:1.55}
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:#8a7fff}.code-block pre .hl2{color:var(--amber)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--violet);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
+.kcheck-opt:hover:not(.disabled){border-color:var(--violet);background:rgba(138,127,255,.05);color:var(--text)}
+.kcheck-opt.correct{border-color:var(--accent);background:rgba(74,240,196,.07);color:var(--accent)}
+.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.07);color:var(--danger)}
+.kcheck-opt.reveal-correct{border-color:rgba(138,127,255,.4);background:rgba(138,127,255,.04);color:#6e7ab0}
+.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
+.kcheck-opt.correct .opt-key{background:var(--accent);color:var(--bg)}.kcheck-opt.wrong .opt-key{background:var(--danger);color:#fff}.kcheck-opt.reveal-correct .opt-key{background:rgba(138,127,255,.2);color:var(--violet)}
+.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
+.kcheck-feedback.show{display:block}.kcheck-feedback.good{background:rgba(74,240,196,.08);border:1px solid rgba(74,240,196,.2);color:#7eceb8}.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border)}.lab-step:last-child{border-bottom:none}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;position:relative;z-index:1}
+.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}.lab-step:last-child .step-connector{display:none}
+.step-content{flex:1;padding-top:4px}
+.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
+.step-body{font-size:14px;color:var(--text);line-height:1.7}
+.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}.step-body li{color:#a0a8bc}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
+.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
+.check-item:hover{border-color:var(--border-hi)}.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
+.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
+.next-btn{background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px;text-decoration:none}
+.next-btn:hover{opacity:.88}.next-btn.lab-btn{background:var(--lab)}
+.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center}
+.prev-btn:hover{color:var(--text);border-color:var(--text)}
+.completion-card{text-align:center;padding:56px 32px}
+.completion-icon{font-size:48px;margin-bottom:20px;display:block}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
+.completion-card p{color:var(--muted);max-width:420px;margin:0 auto 28px;font-size:14px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(138,127,255,.1);border:1px solid rgba(138,127,255,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.lesson-topbar{padding:14px 24px}.compare-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 2 · Day 12</div>
+    <h2>Privileged Access<br>Workstations</h2>
+    <div class="sidebar-meta"><span class="chip">PAW</span><span class="chip">4 lessons</span><span class="chip">1 lab</span><span class="chip">~4h</span></div>
+  </div>
+  <div class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">Why Bastion Hosts Are Risky</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(1)"><span class="nav-num">02</span><span class="nav-label">AWS Systems Manager</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(2)"><span class="nav-num">03</span><span class="nav-label">Session Manager Deep Dive</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(3)"><span class="nav-num">04</span><span class="nav-label">PAW Architecture Patterns</span><span class="nav-check">✓</span></div>
+    <div class="nav-group-label" style="margin-top:8px">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)"><span class="nav-num" style="color:var(--lab)">🔬</span><span class="nav-label">Hands-on: EC2 + Session Manager</span><span class="nav-check">✓</span></div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+<div class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Day 12 &nbsp;/&nbsp; <span id="topbar-title">Why Bastion Hosts Are Risky</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- LESSON 1 -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-warning">The Problem</div>
+    <h1>Why Bastion Hosts<br><em>Are Risky</em></h1>
+    <p><strong>Objective:</strong> Understand the security weaknesses in traditional SSH bastion host architectures that Session Manager was designed to eliminate.</p>
+    <p>A <strong>bastion host</strong> (also called a jump box) is an EC2 instance in a public subnet that administrators SSH into, and then hop from there to private instances. It was the standard approach to access management for a decade.</p>
+    <p>The problem: bastions introduce a large, persistent attack surface exactly where you can least afford it.</p>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <div class="compare-header bad">❌ Traditional SSH Bastion</div>
+        <ul class="compare-body bad">
+          <li>Public IP — internet-facing always</li>
+          <li>Port 22 open to the internet</li>
+          <li>SSH keys can be lost, stolen, shared</li>
+          <li>No session recording by default</li>
+          <li>Key rotation is manual and often skipped</li>
+          <li>Compromised bastion = network pivot point</li>
+          <li>IAM identity and SSH key are separate systems</li>
+        </ul>
+      </div>
+      <div class="compare-card">
+        <div class="compare-header good">✓ Session Manager</div>
+        <ul class="compare-body good">
+          <li>No public IP required on EC2</li>
+          <li>No open ports — no SSH, no RDP</li>
+          <li>IAM-authenticated — no SSH keys</li>
+          <li>Full session logging to CloudTrail + S3</li>
+          <li>Access revoked instantly via IAM policy</li>
+          <li>No persistent network path for attackers</li>
+          <li>Single identity plane: IAM for everything</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout breach"><div class="callout-title">Real-World Risk</div>CrowdStrike's 2025 threat report found that 80% of privilege escalation attacks succeed through standing admin access — either stolen SSH keys, or accounts that stay active long after they're needed. Eliminating both (no SSH keys + no standing access) directly reduces that 80%.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">A developer's laptop is stolen. It had the SSH private key for your bastion host. The bastion doesn't have MFA. What is the attacker's access path?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">A</span>No access — the bastion requires a username and password as well as the key</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)"><span class="opt-key">B</span>Full SSH access to the bastion, and from there, lateral movement to any private instances the bastion can reach — no additional authentication needed</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">C</span>Limited access — they can only read files on the bastion itself, not reach other instances</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">D</span>No access — the bastion's security group only allows SSH from the developer's home IP, which has changed since the key was issued</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" disabled>← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 2 -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-concept">Foundation</div>
+    <h1>AWS Systems<br><em>Manager</em></h1>
+    <p><strong>Objective:</strong> Understand AWS Systems Manager (SSM) as the platform that makes Session Manager possible, and what needs to be in place for it to work.</p>
+    <p>AWS Systems Manager is a management plane for EC2 instances. Instead of SSH, it uses a <strong>lightweight agent</strong> (SSM Agent) that runs on the instance and connects outbound to the SSM service. The key insight: <em>outbound connection from the instance</em>, not inbound from the internet.</p>
+    <div class="arch-flow">
+      <div class="arch-row"><div class="arch-icon">👤</div><div class="arch-body"><div class="arch-title">Administrator (you)</div><div class="arch-desc">Authenticated via IAM — your identity is verified before you can start a session. No SSH key needed.</div></div></div>
+      <div class="arch-row"><div class="arch-icon">🌐</div><div class="arch-body"><div class="arch-title">SSM Service Endpoint</div><div class="arch-desc">AWS-managed service. You connect to this endpoint, not directly to the instance. AWS handles the secure tunnel.</div></div></div>
+      <div class="arch-row"><div class="arch-icon">🔒</div><div class="arch-body"><div class="arch-title">SSM Agent (on EC2)</div><div class="arch-desc">Runs on the instance. Connects <em>outbound</em> to SSM endpoint. The instance has no inbound ports open — no attack surface.</div></div></div>
+      <div class="arch-row"><div class="arch-icon">📝</div><div class="arch-body"><div class="arch-title">CloudTrail + S3 Logging</div><div class="arch-desc">Every session start, every command typed is logged automatically. Full audit trail without additional tooling.</div></div></div>
+    </div>
+    <p>For Session Manager to work on an EC2 instance, three things need to be true:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">Requirements Checklist</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="hl">1. SSM Agent installed</span>
+   → Pre-installed on Amazon Linux 2, Ubuntu 20.04+, Windows Server 2019+
+   → Manual install available for other AMIs
+
+<span class="hl">2. EC2 Instance Role with SSM permissions</span>
+   → Attach: AmazonSSMManagedInstanceCore (AWS managed policy)
+   → This allows the agent to register with SSM service
+
+<span class="hl">3. Network path to SSM endpoints</span>
+   → Either: Internet access via NAT Gateway / IGW
+   → Or: VPC Endpoints for SSM (better for private subnets)</pre>
+    </div>
+    <div class="callout tip"><div class="callout-title">✓ VPC Endpoints for Private Subnets</div>For instances in private subnets with no internet access, create three VPC Interface Endpoints: <code>com.amazonaws.REGION.ssm</code>, <code>com.amazonaws.REGION.ssmmessages</code>, and <code>com.amazonaws.REGION.ec2messages</code>. Session Manager then works entirely within your VPC — no internet traversal at all.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">You've launched an EC2 instance in a private subnet (no internet access). SSM Agent is installed. You try to start a Session Manager session but it fails. What's the most likely missing piece?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">A</span>You need to open port 22 on the security group for Session Manager to work</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)"><span class="opt-key">B</span>The instance needs VPC endpoints for the SSM service — without internet access or endpoints, the agent can't reach the SSM service to register</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">C</span>Session Manager requires instances to be in a public subnet — private instances aren't supported</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">D</span>You need to install the AWS CLI on the instance before Session Manager can establish a connection</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 3 -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-security">Deep Dive</div>
+    <h1>Session Manager<br><em>Deep Dive</em></h1>
+    <p><strong>Objective:</strong> Learn how to use Session Manager from the CLI and console, how to configure session logging, and how to grant and restrict access via IAM.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash — Starting Sessions</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment"># Start interactive shell session (replaces SSH)</span>
+aws ssm start-session --target i-0123456789abcdef0
+
+<span class="comment"># Run a single command without interactive session</span>
+aws ssm send-command \
+  --instance-ids i-0123456789abcdef0 \
+  --document-name AWS-RunShellScript \
+  --parameters commands=<span class="str">"uptime"</span>
+
+<span class="comment"># Port forwarding (replaces SSH tunnel) — e.g. to RDS on port 5432</span>
+aws ssm start-session \
+  --target i-0123456789abcdef0 \
+  --document-name AWS-StartPortForwardingSession \
+  --parameters portNumber=<span class="str">"5432"</span>,localPortNumber=<span class="str">"5432"</span></pre>
+    </div>
+    <p>Session logging sends everything to CloudWatch Logs and S3. Configure it in SSM → Session Manager → Preferences:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">JSON — Session Logging Policy (SSM Document)</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre>{
+  <span class="key">"schemaVersion"</span>: <span class="str">"1.0"</span>,
+  <span class="key">"description"</span>: <span class="str">"Session Manager preferences"</span>,
+  <span class="key">"sessionType"</span>: <span class="str">"Standard_Stream"</span>,
+  <span class="key">"inputs"</span>: {
+    <span class="hl">"s3BucketName"</span>: <span class="str">"my-session-logs"</span>,
+    <span class="hl">"s3EncryptionEnabled"</span>: <span class="str">true</span>,
+    <span class="hl">"cloudWatchLogGroupName"</span>: <span class="str">"/aws/ssm/sessions"</span>,
+    <span class="hl">"cloudWatchEncryptionEnabled"</span>: <span class="str">true</span>,
+    <span class="hl2">"kmsKeyId"</span>: <span class="str">"arn:aws:kms:us-east-1:123456789:key/abc-123"</span>
+  }
+}</pre>
+    </div>
+    <p>IAM controls who can start sessions and on which instances. Granular — you can restrict access to specific instance tags:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">JSON — IAM Policy: Session Manager Access to Tagged Instances</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre>{
+  <span class="key">"Version"</span>: <span class="str">"2012-10-17"</span>,
+  <span class="key">"Statement"</span>: [{
+    <span class="hl">"Effect"</span>: <span class="str">"Allow"</span>,
+    <span class="hl">"Action"</span>: <span class="str">"ssm:StartSession"</span>,
+    <span class="hl">"Resource"</span>: <span class="str">"arn:aws:ec2:*:*:instance/*"</span>,
+    <span class="hl2">"Condition"</span>: {
+      <span class="str">"StringEquals"</span>: {
+        <span class="str">"ec2:ResourceTag/Environment"</span>: <span class="str">"production"</span>
+      }
+    }
+  }]
+}</pre>
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">An auditor asks for a record of every command run on your production EC2 instances over the last 90 days. Your team uses Session Manager. Where is this audit trail stored?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">A</span>It isn't — Session Manager doesn't log commands by default, only session start/end events in CloudTrail</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)"><span class="opt-key">B</span>CloudWatch Logs (for real-time streaming) and/or S3 (for durable archive) — if session logging was configured in Session Manager preferences, full terminal output is stored</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">C</span>Only in the EC2 instance's system logs — you'd need to pull them directly from the instance</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">D</span>In the SSM console's session history — available for 30 days before auto-deletion</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 4 -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-ops">Architecture</div>
+    <h1>PAW Architecture<br><em>Patterns</em></h1>
+    <p><strong>Objective:</strong> Understand Privileged Access Workstation (PAW) design as a broader pattern — dedicated environments for high-privilege operations — and how Session Manager fits into it.</p>
+    <p>A <strong>Privileged Access Workstation</strong> is a hardened, dedicated compute environment used exclusively for privileged operations. The principle: never mix admin work with everyday browsing, email, and general work — because those activities introduce malware, phishing risk, and credential compromise.</p>
+    <div class="callout insight"><div class="callout-title">💡 The PAW Principle</div>If you're approving a production deployment from the same browser where you read email and click links, you're one successful phishing email away from a compromised admin session. A PAW separates the blast radius: even if your daily laptop is compromised, your admin credentials remain isolated.</div>
+    <div class="arch-flow">
+      <div class="arch-row"><div class="arch-icon">💻</div><div class="arch-body"><div class="arch-title">Tier 0 — Cloud Control Plane</div><div class="arch-desc">AWS root/admin access. Dedicated PAW with hardware MFA. Never accessed from a general-purpose machine. Break-glass only.</div></div></div>
+      <div class="arch-row"><div class="arch-icon">🖥️</div><div class="arch-body"><div class="arch-title">Tier 1 — Production Operations</div><div class="arch-desc">Session Manager sessions to production instances. IAM role assumed with 1-hour TTL (covered Day 13). Session logging mandatory.</div></div></div>
+      <div class="arch-row"><div class="arch-icon">🔧</div><div class="arch-body"><div class="arch-title">Tier 2 — Non-Production</div><div class="arch-desc">Staging and dev access. Standard developer workflow. Lower privilege — damage radius is contained to non-production environments.</div></div></div>
+    </div>
+    <p>In AWS, a practical PAW implementation uses a <strong>dedicated EC2 instance</strong> (or AWS Cloud9 environment, or a hardened VM) that engineers access via Session Manager, and from which all production operations are performed:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">Architecture — PAW Flow</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment"># Engineer's laptop (untrusted device)</span>
+Engineer → <span class="hl">IAM auth (MFA required)</span> → SSM Session Manager
+         ↓
+    <span class="hl2">PAW EC2 Instance</span> (no public IP, private subnet only)
+    - No internet access
+    - Only has access to production SSM endpoints
+    - Session fully logged to S3/CloudWatch
+         ↓
+    <span class="hl">Production EC2 instances</span> (via SSM from the PAW)</pre>
+    </div>
+    <div class="callout warning"><div class="callout-title">⚠ Break-Glass Accounts</div>Always maintain a break-glass procedure: an emergency admin account that's sealed, monitored, and only opened under incident conditions. Document the process. Store credentials in a physical safe or HSM. Test it quarterly — you don't want to discover the process is broken during a real incident.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Your company has a PAW EC2 instance in a private subnet that engineers use for all production operations. A new engineer needs access. What's the correct onboarding process?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">A</span>Generate an SSH key pair, add the public key to the PAW's authorized_keys file, and share the private key with the engineer</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">B</span>Give the engineer the root credentials so they can SSH in using any machine from the internet</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)"><span class="opt-key">C</span>Create an IAM user or role for the engineer with ssm:StartSession permission scoped to the PAW instance, with MFA required — no SSH keys needed</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">D</span>Add the engineer's home IP to the PAW's security group inbound rules for port 22</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="next()">Start Lab →</button></div>
+  </div>
+
+  <!-- LAB -->
+  <div class="lesson-pane lab-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-On Lab</div>
+    <h1>EC2 + Session<br><em>Manager</em></h1>
+    <p>Deploy an EC2 instance with no public IP and no open ports, connect to it exclusively via Session Manager, configure session logging, and verify the audit trail.</p>
+    <div class="callout lab-note"><div class="callout-title">⚡ Cost Note</div>This lab uses a t2.micro EC2 instance (Free Tier eligible). Remember to stop or terminate it after the lab to avoid charges. The instance does not need a key pair — that's the point.</div>
+    <div class="lab-steps">
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Create the IAM Role for the Instance <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>IAM → Roles → Create role → EC2 (trusted entity)</li>
+              <li>Attach policy: <code>AmazonSSMManagedInstanceCore</code></li>
+              <li>Name: <code>EC2-SSM-Session-Role</code> → Create role</li>
+            </ol>
+            <p style="color:#8a92a8;margin-top:8px">This policy grants the EC2 instance permission to register with SSM and accept session requests.</p>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Launch EC2 — No Key Pair, No Public IP <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>EC2 → Launch instance → Amazon Linux 2 → t2.micro</li>
+              <li>Network settings: Auto-assign public IP → <strong>Disable</strong></li>
+              <li>IAM instance profile: <code>EC2-SSM-Session-Role</code></li>
+              <li>Key pair: <strong>"Proceed without key pair"</strong> — this is intentional</li>
+              <li>Security group: <strong>no inbound rules</strong> (empty)</li>
+              <li>Launch and note the instance ID</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Connect via Session Manager <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~5 min</span></div>
+          <div class="step-body">
+            <p style="color:#8a92a8;margin-bottom:8px">Wait ~2 minutes for the instance to boot and SSM Agent to register.</p>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash — AWS CLI</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre><span class="comment"># Replace with your actual instance ID</span>
+aws ssm start-session --target i-0YOUR_INSTANCE_ID
+
+<span class="comment"># Or in the console: EC2 → Instances → Connect → Session Manager tab</span>
+
+<span class="comment"># Once connected, verify you're on the instance:</span>
+whoami
+hostname
+cat /etc/os-release</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">4</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Configure Session Logging <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>SSM → Session Manager → Preferences → Edit</li>
+              <li>Enable: <strong>CloudWatch Logs</strong> → Log group: <code>/ssm/sessions</code></li>
+              <li>Enable: <strong>S3 bucket</strong> → create or select a log bucket</li>
+              <li>Save preferences</li>
+              <li>Start a new session, run a few commands, then end it</li>
+              <li>Verify the session log appears in CloudWatch: Logs → Log groups → <code>/ssm/sessions</code></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">5</div></div>
+        <div class="step-content">
+          <div class="step-title">Document + Cleanup <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~5 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Screenshot: EC2 console showing <strong>no public IP</strong> and <strong>no inbound security group rules</strong></li>
+              <li>Screenshot: Active Session Manager session</li>
+              <li>Screenshot: Session log in CloudWatch</li>
+              <li><strong>Terminate the instance</strong> to avoid charges</li>
+            </ol>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre>git add screenshots/day-12-*.png
+git commit -m "Day 12: PAW — Session Manager active, no SSH keys, session logging configured"
+git push</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Lab Checklist</h2>
+    <div class="checklist-progress"><div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div><span class="checklist-progress-label" id="cl-label">0 / 6</span></div>
+    <div class="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">IAM role <code>EC2-SSM-Session-Role</code> created with <code>AmazonSSMManagedInstanceCore</code></div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">EC2 launched with no key pair, no public IP, no inbound security group rules</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">Session Manager connection successful — screenshot of active session taken</div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">Session logging configured to CloudWatch Logs and/or S3</div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">Session log visible in CloudWatch — commands from the session are recorded</div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">Instance terminated, GitHub commit pushed with screenshots</div></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="finish()">Complete Day 12 ✓</button></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">🛡️</span>
+      <h1>Day 12 Complete</h1>
+      <p>You've replaced the riskiest part of traditional cloud access — SSH bastions and long-lived keys — with a zero-trust, fully audited, key-free access model.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 6 complete</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="../../index.html" style="text-decoration:none"><button class="prev-btn">← Course Index</button></a>
+        <a href="day-13.html" style="text-decoration:none"><button class="next-btn">Day 13 →</button></a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const STORAGE_KEY='csm-day12';const TOTAL=5;
+const titles=['Why Bastion Hosts Are Risky','AWS Systems Manager','Session Manager Deep Dive','PAW Architecture Patterns','Hands-on: EC2 + Session Manager'];
+const fb={
+  0:{good:"Correct. SSH key authentication doesn't require anything beyond the key — no password, no MFA. With the key in hand, the attacker can SSH to the bastion and, from there, attempt to pivot to any instance the bastion's security group can reach. This is why SSH key management is so critical — and why eliminating SSH keys entirely is better.",bad:"Not quite. Standard SSH key authentication doesn't require a password — the private key is the credential. If an attacker has the key and the bastion has port 22 open to the internet, they can authenticate immediately. Security groups allowing 0.0.0.0/0 on port 22 means any IP can attempt the connection."},
+  1:{good:"Correct. In a private subnet with no NAT Gateway or internet gateway, the SSM Agent can't reach the SSM service endpoint to register. VPC Interface Endpoints for ssm, ssmmessages, and ec2messages create private network paths to these services entirely within the VPC — no internet needed.",bad:"Not quite. Session Manager doesn't use port 22 at all — that's SSH. The connection goes from SSM Agent on the instance to the SSM service, which requires network connectivity. In a private subnet without internet access, you need VPC Interface Endpoints so the agent can reach the SSM service privately."},
+  2:{good:"Correct. When session logging is configured (SSM → Session Manager → Preferences), full terminal output — every command and its output — is streamed to CloudWatch Logs in real time and stored durably in S3. This is the complete audit trail the auditor needs.",bad:"Not quite. By default, CloudTrail only captures session start/end API calls. For full command-level logging, you must explicitly enable session logging in Session Manager Preferences to stream terminal output to CloudWatch Logs and/or S3."},
+  3:{good:"Correct. In a Session Manager-based PAW environment, access is controlled entirely through IAM. Creating an IAM identity with scoped ssm:StartSession permissions (and requiring MFA via a condition) is the correct onboarding path. No SSH keys, no security group changes, no credentials to manage beyond IAM.",bad:"Not quite. SSH keys and security group changes are the old model — exactly what a PAW with Session Manager is designed to replace. The new model: IAM identity + MFA + ssm:StartSession permission. Access is granted by IAM policy, not by key distribution or firewall rules."}
+};
+let state=loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
+function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
+function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/4*100);document.getElementById('score-val').textContent=state.correct.length+' / 4 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked;document.getElementById('pane-complete').classList.add('active');document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
+function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
+function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
+function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
+function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
+function updateChecklist(){const total=6,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
+function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
+function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const opts=document.querySelectorAll('#pane-'+idx+' .kcheck-opt');if(!opts.length)return;opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
+restoreState();
+</script>
+</body>
+</html>

@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 22 — CloudTrail + SIEM Foundation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#f05a5a;--accent-dim:rgba(240,90,90,.08);--amber:#f0924a;--violet:#8a7fff;--green:#4af0c4;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w4:#f05a5a;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w4);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)}.tag-ops{color:var(--amber)}.tag-security{color:var(--w4)}.tag-lab{color:var(--lab)}.tag-siem{color:var(--green)}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}
+.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--accent);background:var(--accent-dim)}.callout.breach .callout-title{color:var(--accent)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--green);background:rgba(74,240,196,.06)}.callout.tip .callout-title{color:var(--green)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
+.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+.styled-table tr:hover td{background:rgba(255,255,255,.02)}
+.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--w4)}
+.flow-steps{display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:24px 0}
+.flow-step{display:grid;grid-template-columns:28px 1fr;gap:14px;align-items:start;padding:14px 20px;border-bottom:1px solid var(--border)}
+.flow-step:last-child{border-bottom:none}
+.flow-num{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--w4);font-weight:600;padding-top:2px}
+.flow-body{font-size:13.5px;color:var(--text);line-height:1.6}
+.flow-body strong{color:#e0e6f0}
+.flow-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--lab)}
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:#f05a5a}.code-block pre .hl2{color:var(--amber)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--w4);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
+.kcheck-opt:hover:not(.disabled){border-color:var(--w4);background:rgba(240,90,90,.05);color:var(--text)}
+.kcheck-opt.correct{border-color:var(--green);background:rgba(74,240,196,.07);color:var(--green)}
+.kcheck-opt.wrong{border-color:var(--accent);background:rgba(240,90,90,.07);color:var(--accent)}
+.kcheck-opt.reveal-correct{border-color:rgba(74,240,196,.4);background:rgba(74,240,196,.04);color:#3ab89a}
+.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
+.kcheck-opt.correct .opt-key{background:var(--green);color:var(--bg)}.kcheck-opt.wrong .opt-key{background:var(--accent);color:#fff}.kcheck-opt.reveal-correct .opt-key{background:rgba(74,240,196,.2);color:var(--green)}
+.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
+.kcheck-feedback.show{display:block}.kcheck-feedback.good{background:rgba(74,240,196,.08);border:1px solid rgba(74,240,196,.2);color:#5ab8a8}.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border)}.lab-step:last-child{border-bottom:none}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}.lab-step:last-child .step-connector{display:none}
+.step-content{flex:1;padding-top:4px}
+.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
+.step-body{font-size:14px;color:var(--text);line-height:1.7}
+.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}.step-body li{color:#a0a8bc}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
+.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
+.check-item:hover{border-color:var(--border-hi)}.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
+.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
+.next-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px}
+.next-btn:hover{opacity:.88}.next-btn.lab-btn{background:var(--lab);color:var(--bg)}
+.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s;display:inline-flex;align-items:center}
+.prev-btn:hover{color:var(--text);border-color:var(--text)}
+.completion-card{text-align:center;padding:56px 32px}
+.completion-icon{font-size:48px;margin-bottom:20px;display:block}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
+.completion-card p{color:var(--muted);max-width:420px;margin:0 auto 28px;font-size:14px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,90,90,.1);border:1px solid rgba(240,90,90,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.lesson-topbar{padding:14px 24px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 4 · Day 22</div>
+    <h2>CloudTrail +<br>SIEM Foundation</h2>
+    <div class="sidebar-meta"><span class="chip">CloudTrail</span><span class="chip">CloudWatch</span><span class="chip">SIEM</span><span class="chip">4 lessons</span><span class="chip">1 lab</span></div>
+  </div>
+  <div class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">Why Logging Is Your Security Brain</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(1)"><span class="nav-num">02</span><span class="nav-label">CloudTrail: The AWS API Audit Log</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(2)"><span class="nav-num">03</span><span class="nav-label">CloudWatch Logs Insights: Querying at Scale</span><span class="nav-check">✓</span></div>
+    <div class="nav-item" onclick="goTo(3)"><span class="nav-num">04</span><span class="nav-label">Detection Engineering: Alarms & Metrics</span><span class="nav-check">✓</span></div>
+    <div class="nav-group-label" style="margin-top:8px">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)"><span class="nav-num" style="color:var(--lab)">🔬</span><span class="nav-label">Hands-on: Multi-Region Trail + SIEM Dashboard</span><span class="nav-check">✓</span></div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+<div class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Day 22 &nbsp;/&nbsp; <span id="topbar-title">Why Logging Is Your Security Brain</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- LESSON 1 -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-security">Detection · Foundational</div>
+    <h1>Why Logging Is<br><em>Your Security Brain</em></h1>
+    <p><strong>Objective:</strong> Understand why centralised logging is the foundation of every security operation — you cannot detect, investigate, or prove what you cannot see. Learn what CloudTrail captures and why it's irreplaceable.</p>
+    <p>Every other control in this programme — IAM, VPC, KMS, Macie, Inspector — creates a preventive boundary. Logging is different: it answers the question <strong>"what actually happened?"</strong> It's the difference between knowing you were breached and knowing when, how, by whom, and what they touched.</p>
+    <div class="callout breach">
+      <div class="callout-title">⚠ Real Breach — Capital One (2019)</div>
+      A misconfigured WAF allowed a former AWS employee to exploit an SSRF vulnerability and obtain EC2 instance metadata credentials. She exfiltrated 106 million customer records from S3 over several days. The breach was only discovered when someone reported it externally — not by Capital One's own monitoring. CloudTrail was enabled, but nobody had built alerts on the unusual GetObject volume or the SSRF-style metadata calls. The logs existed; the detections didn't. $80M fine.
+    </div>
+    <p>The three questions every security log must answer:</p>
+    <div class="flow-steps">
+      <div class="flow-step"><div class="flow-num">1</div><div class="flow-body"><strong>Who?</strong> Which identity (IAM user, role, service) performed the action. Without this, you can't attribute activity to a person or a compromise.</div></div>
+      <div class="flow-step"><div class="flow-num">2</div><div class="flow-body"><strong>What + When?</strong> Which API call, on which resource, at which exact timestamp. The event name, the resource ARN, and the UTC time are the minimum evidence for any investigation.</div></div>
+      <div class="flow-step"><div class="flow-num">3</div><div class="flow-body"><strong>From where?</strong> Source IP address. Distinguishes a developer's laptop from an attacker's VPS — and correlates with VPC flow logs and GuardDuty findings.</div></div>
+    </div>
+    <div class="callout insight">
+      <div class="callout-title">💡 Three Log Tiers in AWS</div>
+      <strong>CloudTrail</strong> — API-level audit: every AWS API call (who called what on which resource). <strong>VPC Flow Logs</strong> — network-level: IP traffic accepted/rejected across ENIs. <strong>Application logs</strong> — business-level: what your code did. All three together give you complete visibility. Today focuses on CloudTrail and CloudWatch as your SIEM backbone.
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">CloudTrail is enabled in your account. An attacker uses stolen IAM credentials to call <code>s3:GetObject</code> on your PCI data bucket from a cloud VPS at 3 AM. What does CloudTrail record, and what does it <em>not</em> record?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">A</span>CloudTrail records everything including the object content — you can reconstruct exactly what data was stolen</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)"><span class="opt-key">B</span>CloudTrail records the API call metadata (identity, action, resource ARN, source IP, timestamp) but NOT the object content — you know they accessed the file but not what the file contained</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">C</span>CloudTrail only records management events — S3 GetObject is a data event and requires separate configuration to log</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">D</span>CloudTrail records nothing for S3 — VPC flow logs are needed to detect S3 data access</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" disabled>← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 2 -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-security">CloudTrail · Foundational</div>
+    <h1>CloudTrail:<br><em>The AWS API Audit Log</em></h1>
+    <p><strong>Objective:</strong> Configure CloudTrail correctly — multi-region, with data events, log file validation, and S3 delivery — and understand the difference between management events and data events.</p>
+    <table class="styled-table">
+      <thead><tr><th>Event Type</th><th>What it captures</th><th>Default?</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td>Management</td><td>Control-plane API calls: CreateBucket, RunInstances, AttachRolePolicy, DeleteTrail</td><td>Yes (free)</td><td>Free</td></tr>
+        <tr><td>Data — S3</td><td>Object-level: GetObject, PutObject, DeleteObject on S3 buckets you specify</td><td>No</td><td>$0.10/100K events</td></tr>
+        <tr><td>Data — Lambda</td><td>Function invocations — who invoked, with what payload size</td><td>No</td><td>$0.10/100K events</td></tr>
+        <tr><td>Insights</td><td>Anomalous API call rate detection (e.g. 10x normal DescribeInstances volume)</td><td>No</td><td>$0.35/100K events</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warning">
+      <div class="callout-title">⚠ Single-Region Trail = Blind Spot</div>
+      A trail scoped to one region misses every API call in every other region. Attackers commonly spin up resources in rarely-monitored regions (ap-southeast-2, sa-east-1) to avoid detection. Always create an <strong>organisation-wide multi-region trail</strong> that covers all current and future regions. One trail, delivered to one centralised S3 bucket, covers everything.
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash — create hardened multi-region trail</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment"># Create trail: multi-region, log file validation on, management + S3 data events</span>
+aws cloudtrail create-trail \
+  --name <span class="str">org-security-trail</span> \
+  --s3-bucket-name <span class="str">my-cloudtrail-logs-bucket</span> \
+  --is-multi-region-trail \
+  --enable-log-file-validation \
+  --include-global-service-events
+
+<span class="comment"># Start logging</span>
+aws cloudtrail start-logging --name <span class="str">org-security-trail</span>
+
+<span class="comment"># Add S3 data events (PutObject + GetObject on all buckets)</span>
+aws cloudtrail put-event-selectors \
+  --trail-name <span class="str">org-security-trail</span> \
+  --event-selectors <span class="str">'[{
+    "ReadWriteType": "All",
+    "IncludeManagementEvents": true,
+    "DataResources": [{
+      "Type": "AWS::S3::Object",
+      "Values": ["arn:aws:s3:::"]
+    }]
+  }]'</span></pre>
+    </div>
+    <div class="callout tip">
+      <div class="callout-title">✓ Protect the Trail Itself</div>
+      An attacker's first move after gaining access is often <code>cloudtrail:StopLogging</code> or <code>cloudtrail:DeleteTrail</code> — to erase their tracks. Protect the trail with: (1) SCP denying <code>cloudtrail:StopLogging</code> for all non-security roles, (2) S3 Object Lock on the log bucket (WORM — can't delete), (3) CloudWatch alarm on <code>StopLogging</code> API calls. The alarm from lesson 4 covers this.
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">You enable a multi-region CloudTrail with management events only (default). Three months later you investigate a suspected data breach where someone may have exfiltrated S3 objects. Can you tell from CloudTrail which specific objects were accessed?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">A</span>Yes — management events include all S3 operations including object-level reads and writes</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)"><span class="opt-key">B</span>No — S3 data events (GetObject, PutObject, DeleteObject) require a separate data event selector. Management events only capture bucket-level operations like CreateBucket and PutBucketPolicy</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">C</span>Yes — S3 server access logs are automatically forwarded to CloudTrail in multi-region mode</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">D</span>No — CloudTrail cannot capture S3 data events regardless of configuration</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 3 -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-siem">CloudWatch Logs Insights · Intermediate</div>
+    <h1>CloudWatch Logs Insights:<br><em>Querying at Scale</em></h1>
+    <p><strong>Objective:</strong> Write Logs Insights queries to hunt for specific threats across CloudTrail logs — privilege escalation attempts, cross-region activity, IAM policy changes, and root account usage.</p>
+    <p>CloudWatch Logs Insights is your built-in SIEM query engine. CloudTrail delivers JSON logs to a CloudWatch Log Group, and Logs Insights lets you run SQL-like queries across them — no external SIEM required for core detection use cases.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">Logs Insights — detect root account usage (CRITICAL)</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="hl">fields</span> @timestamp, eventName, sourceIPAddress, userAgent
+<span class="hl">| filter</span> userIdentity.type = <span class="str">"Root"</span>
+<span class="hl">| sort</span> @timestamp <span class="hl2">desc</span>
+<span class="hl">| limit</span> <span class="key">20</span></pre>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">Logs Insights — detect IAM privilege escalation attempts</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="hl">fields</span> @timestamp, eventName, userIdentity.arn, requestParameters
+<span class="hl">| filter</span> eventName <span class="hl2">in</span> [
+    <span class="str">"AttachUserPolicy"</span>, <span class="str">"AttachRolePolicy"</span>, <span class="str">"PutUserPolicy"</span>,
+    <span class="str">"PutRolePolicy"</span>, <span class="str">"CreatePolicyVersion"</span>, <span class="str">"SetDefaultPolicyVersion"</span>,
+    <span class="str">"AddUserToGroup"</span>, <span class="str">"CreateLoginProfile"</span>, <span class="str">"UpdateLoginProfile"</span>
+  ]
+<span class="hl">| sort</span> @timestamp <span class="hl2">desc</span></pre>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">Logs Insights — detect CloudTrail tampering (attacker evasion)</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="hl">fields</span> @timestamp, eventName, userIdentity.arn, sourceIPAddress
+<span class="hl">| filter</span> eventName <span class="hl2">in</span> [
+    <span class="str">"StopLogging"</span>, <span class="str">"DeleteTrail"</span>, <span class="str">"UpdateTrail"</span>,
+    <span class="str">"PutEventSelectors"</span>, <span class="str">"DeleteFlowLogs"</span>
+  ]
+<span class="hl">| sort</span> @timestamp <span class="hl2">desc</span></pre>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">Logs Insights — top API callers by volume (anomaly baseline)</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="hl">fields</span> userIdentity.arn, eventName
+<span class="hl">| stats</span> <span class="hl2">count</span>(*) <span class="hl">as</span> calls <span class="hl">by</span> userIdentity.arn, eventName
+<span class="hl">| sort</span> calls <span class="hl2">desc</span>
+<span class="hl">| limit</span> <span class="key">20</span>
+<span class="comment">-- Run over 24h window; spikes vs baseline = anomaly signal</span></pre>
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Your Logs Insights query for root account usage returns zero results over the past 30 days. A colleague says "great — the root account isn't being used." Is this conclusion safe to draw?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">A</span>Yes — zero results means root account was never used in that period, confirming good security hygiene</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)"><span class="opt-key">B</span>Not necessarily — the query only returns results if CloudTrail was logging and the logs were delivered to the correct Log Group. If the trail was stopped, the log group was wrong, or data events weren't enabled, there could be unlogged root activity</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">C</span>Yes — Logs Insights searches all CloudTrail history regardless of trail configuration</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">D</span>No — root account usage is never captured by CloudTrail as it bypasses the API logging layer</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn" onclick="next()">Next Lesson →</button></div>
+  </div>
+
+  <!-- LESSON 4 -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-ops">Detection Engineering · Intermediate</div>
+    <h1>Detection Engineering:<br><em>Alarms & Metrics</em></h1>
+    <p><strong>Objective:</strong> Build CloudWatch metric filters and alarms that fire automatically when critical security events occur — turning your CloudTrail logs into a real-time detection system.</p>
+    <p>Logs Insights is for ad-hoc hunting. <strong>Metric filters + alarms</strong> are for continuous, automated detection — they watch the log stream 24/7 and trigger SNS notifications (email, Slack, PagerDuty) within minutes of a detection.</p>
+    <div class="callout insight">
+      <div class="callout-title">💡 CIS AWS Foundations — 15 Required Alarms</div>
+      CIS AWS Foundations Benchmark v1.4.0 mandates 15 specific CloudWatch alarms as controls. These are the baseline every cloud security programme must implement. The lab covers the most critical five — once you know the pattern, the remaining ten follow the same structure.
+    </div>
+    <table class="styled-table">
+      <thead><tr><th>CIS Control</th><th>Event to detect</th><th>Severity</th></tr></thead>
+      <tbody>
+        <tr><td>3.1</td><td>Unauthorised API calls (<code>errorCode = "AccessDenied"</code>)</td><td>High</td></tr>
+        <tr><td>3.3</td><td>Root account usage (<code>userIdentity.type = "Root"</code>)</td><td>Critical</td></tr>
+        <tr><td>3.4</td><td>IAM policy changes (AttachUserPolicy, PutRolePolicy, etc.)</td><td>High</td></tr>
+        <tr><td>3.5</td><td>CloudTrail configuration changes (StopLogging, DeleteTrail)</td><td>Critical</td></tr>
+        <tr><td>3.10</td><td>Security Group changes (AuthorizeSecurityGroupIngress)</td><td>Medium</td></tr>
+      </tbody>
+    </table>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash — root account alarm (CIS 3.3): metric filter → alarm → SNS</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><span class="comment"># Step 1: Create metric filter on CloudTrail log group</span>
+aws logs put-metric-filter \
+  --log-group-name <span class="str">CloudTrail/DefaultLogGroup</span> \
+  --filter-name <span class="str">RootAccountUsage</span> \
+  --filter-pattern <span class="str">'{ $.userIdentity.type = "Root" && $.userIdentity.invokedBy NOT EXISTS && $.eventType != "AwsServiceEvent" }'</span> \
+  --metric-transformations \
+    metricName=<span class="str">RootAccountUsageCount</span>,metricNamespace=<span class="str">CISBenchmark</span>,metricValue=<span class="key">1</span>
+
+<span class="comment"># Step 2: Create CloudWatch alarm — fires on any root usage</span>
+aws cloudwatch put-metric-alarm \
+  --alarm-name <span class="str">CIS-3.3-RootAccountUsage</span> \
+  --alarm-description <span class="str">"CRITICAL: Root account API call detected"</span> \
+  --metric-name <span class="str">RootAccountUsageCount</span> \
+  --namespace <span class="str">CISBenchmark</span> \
+  --statistic <span class="str">Sum</span> \
+  --period <span class="key">300</span> \
+  --threshold <span class="key">1</span> \
+  --comparison-operator <span class="str">GreaterThanOrEqualToThreshold</span> \
+  --evaluation-periods <span class="key">1</span> \
+  --alarm-actions <span class="str">arn:aws:sns:us-east-1:123456789:SecurityAlerts</span></pre>
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">You set the CIS 3.3 root account alarm with a 5-minute evaluation period and threshold of 1. At 2:47 AM, the root account is used to disable MFA. At what time will the alarm fire?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">A</span>Immediately at 2:47 AM — CloudWatch alarms fire in real-time on each log entry</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)"><span class="opt-key">B</span>Between 2:47 and 2:57 AM — CloudWatch evaluates the metric at the end of the 5-minute period window, so the alarm fires within ~10 minutes of the event at most</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">C</span>At 3:00 AM — CloudWatch alarms only evaluate on the hour boundary</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">D</span>Never — root account MFA changes are not captured by CloudTrail management events</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="next()">Start Lab →</button></div>
+  </div>
+
+  <!-- LAB -->
+  <div class="lesson-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-On Lab</div>
+    <h1>Multi-Region Trail +<br><em>SIEM Dashboard</em></h1>
+    <p>Deploy a production-grade CloudTrail configuration, deliver logs to CloudWatch, build the CIS 3.3 and 3.5 alarms, and create a CloudWatch dashboard as your SIEM home screen.</p>
+    <div class="callout lab-note"><div class="callout-title">⚡ Cost Note</div>CloudTrail: first trail in each region is free. CloudWatch Logs: $0.50/GB ingested — trail logs are tiny (&lt;1MB for this lab). CloudWatch alarms: $0.10/alarm/month — 2 alarms = $0.20. Total lab cost: &lt;$0.05. Clean up the SNS topic and alarms after — the trail itself is free to keep.</div>
+    <div class="lab-steps">
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Create Multi-Region Trail with CloudWatch Delivery <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>CloudTrail Console → Create trail → Name: <code>security-audit-trail</code></li>
+              <li>Apply trail to all regions → ✓ (this is the multi-region toggle)</li>
+              <li>Storage: Create new S3 bucket <code>cloudtrail-logs-{account-id}</code> — enable SSE-KMS</li>
+              <li>CloudWatch Logs → Enable → New log group: <code>/aws/cloudtrail/security-audit</code></li>
+              <li>Management events: Read + Write. Data events: skip for free tier</li>
+              <li>Enable log file validation → Create trail</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Create SNS Alert Topic <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~5 min</span></div>
+          <div class="step-body">
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre><span class="comment"># Create SNS topic for security alerts</span>
+aws sns create-topic --name <span class="str">SecurityAlerts</span>
+
+<span class="comment"># Subscribe your email (replace with your address)</span>
+aws sns subscribe \
+  --topic-arn arn:aws:sns:us-east-1:<span class="hl2">ACCOUNT_ID</span>:SecurityAlerts \
+  --protocol email \
+  --notification-endpoint <span class="str">you@example.com</span>
+
+<span class="comment"># Confirm the subscription via the email AWS sends you</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Build CIS 3.3 + 3.5 Alarms <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min</span></div>
+          <div class="step-body">
+            <p>Use the bash commands from Lesson 4 to create both alarms. Replace <code>CloudTrail/DefaultLogGroup</code> with your log group name <code>/aws/cloudtrail/security-audit</code> and update the SNS ARN. Then build the CloudTrail tampering alarm:</p>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash — CIS 3.5: CloudTrail configuration changes</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre>aws logs put-metric-filter \
+  --log-group-name <span class="str">/aws/cloudtrail/security-audit</span> \
+  --filter-name <span class="str">CloudTrailChanges</span> \
+  --filter-pattern <span class="str">'{ ($.eventName = CreateTrail) || ($.eventName = UpdateTrail) || ($.eventName = DeleteTrail) || ($.eventName = StartLogging) || ($.eventName = StopLogging) }'</span> \
+  --metric-transformations \
+    metricName=<span class="str">CloudTrailChangeCount</span>,metricNamespace=<span class="str">CISBenchmark</span>,metricValue=<span class="key">1</span>
+
+aws cloudwatch put-metric-alarm \
+  --alarm-name <span class="str">CIS-3.5-CloudTrailChanges</span> \
+  --metric-name <span class="str">CloudTrailChangeCount</span> \
+  --namespace <span class="str">CISBenchmark</span> \
+  --statistic <span class="str">Sum</span> --period <span class="key">300</span> --threshold <span class="key">1</span> \
+  --comparison-operator <span class="str">GreaterThanOrEqualToThreshold</span> \
+  --evaluation-periods <span class="key">1</span> \
+  --alarm-actions arn:aws:sns:us-east-1:<span class="hl2">ACCOUNT_ID</span>:SecurityAlerts</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">4</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Build CloudWatch SIEM Dashboard <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>CloudWatch Console → Dashboards → Create dashboard → <code>SecurityOperations</code></li>
+              <li>Add widget → Alarm status → select both CIS alarms (gives red/green at a glance)</li>
+              <li>Add widget → Logs table → Logs Insights query → paste the root account usage query from Lesson 3, time range 24h</li>
+              <li>Add widget → Logs table → paste the IAM privilege escalation query from Lesson 3</li>
+              <li>Add widget → Number → metric <code>CISBenchmark/RootAccountUsageCount</code> sum 7d (should be 0)</li>
+              <li>Screenshot the dashboard — this is your SIEM home screen portfolio artefact</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="lab-step">
+        <div class="step-num-wrap"><div class="step-num">5</div></div>
+        <div class="step-content">
+          <div class="step-title">Run a Logs Insights Hunt + Commit <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>CloudWatch → Logs Insights → select log group → run the "top API callers" query from Lesson 3</li>
+              <li>Export the results as CSV → save as <code>portfolio/week4/day22-api-baseline.csv</code></li>
+              <li>Screenshot the dashboard + Logs Insights results</li>
+            </ol>
+            <div class="code-block">
+              <div class="code-header"><span class="code-lang">bash — commit artefacts</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+              <pre>git add portfolio/week4/ screenshots/day-22*.png
+git commit -m <span class="str">"Day 22: Multi-region CloudTrail, CIS 3.3+3.5 alarms, SIEM dashboard"</span>
+git push</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Lab Checklist</h2>
+    <div class="checklist-progress"><div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div><span class="checklist-progress-label" id="cl-label">0 / 7</span></div>
+    <div class="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">Multi-region CloudTrail created with CloudWatch Logs delivery to <code>/aws/cloudtrail/security-audit</code></div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">Log file validation enabled — trail status shows validation active</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">SNS <code>SecurityAlerts</code> topic created + email subscription confirmed</div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">CIS 3.3 alarm (root account usage) — status OK in CloudWatch</div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">CIS 3.5 alarm (CloudTrail changes) — status OK in CloudWatch</div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">SecurityOperations dashboard built with alarm widgets + 2 Logs Insights queries</div></div>
+      <div class="check-item" onclick="toggleCheck(this,6)"><div class="check-box">✓</div><div class="check-text">Dashboard screenshot + API baseline CSV committed to portfolio/week4/</div></div>
+    </div>
+    <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="finish()">Complete Day 22 ✓</button></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">🔍</span>
+      <h1>Day 22 Complete</h1>
+      <p>You've built your security observation layer — CloudTrail capturing every API call, CloudWatch Logs Insights for hunting, and automated CIS alarms firing within minutes of a detection. Tomorrow: GuardDuty threat intelligence.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 7 complete</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a href="../index.html" style="text-decoration:none"><button class="prev-btn">← Course Index</button></a>
+        <a href="day-23.html" style="text-decoration:none"><button class="next-btn">Day 23 →</button></a>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const STORAGE_KEY='csm-day22';const TOTAL=5;
+const titles=['Why Logging Is Your Security Brain','CloudTrail: The AWS API Audit Log','CloudWatch Logs Insights: Querying at Scale','Detection Engineering: Alarms & Metrics','Hands-on: Multi-Region Trail + SIEM Dashboard'];
+const fb={
+  0:{good:"Correct — and this distinction is critical for incident response. CloudTrail records the API call metadata: who made the call (IAM identity ARN), what they called (s3:GetObject), which resource (bucket/key ARN), when (UTC timestamp), and from where (source IP). It does NOT record the content of the S3 object. You know the file was accessed but not what was in it — which is why data classification (Macie) matters. To know what was taken, you need to know what was in the bucket at that time.",bad:"Not quite. Option C is partially true but misleading — S3 GetObject IS a data event, but by default CloudTrail doesn't log it. You need to explicitly enable S3 data events in your event selectors. The key point is: even with data events enabled, CloudTrail records the API call metadata only (bucket, key name, identity, IP, time) — NOT the object content. You'd know which files were accessed but not what data they contained."},
+  1:{good:"Correct. Management events capture bucket-level control-plane operations: CreateBucket, DeleteBucket, PutBucketPolicy, PutBucketAcl. They do NOT capture object-level operations. To log GetObject, PutObject, and DeleteObject calls, you must explicitly add an S3 data event selector to your trail. This is a critical gap in most default CloudTrail configurations — and exactly what was missing in the Capital One breach investigation. Always enable S3 data events for buckets holding sensitive data.",bad:"Not quite. S3 data events (GetObject, PutObject, DeleteObject) are NOT included in management events. They're a separate event type requiring an explicit data event selector in your trail configuration. Without data events, CloudTrail only records bucket-level management operations. You would have no record of which specific objects were accessed, only that the bucket exists. This is a common gap that leaves security teams blind during S3 data breach investigations."},
+  2:{good:"Correct. Zero results is only meaningful if the logging pipeline is verified end-to-end: (1) the trail was active during the entire period, (2) logs were delivered to the correct CloudWatch Log Group, (3) there were no delivery failures, (4) your query is pointing at the right log group. Always validate the pipeline before concluding absence of activity. Run a test query for known events (like your own console logins) to confirm the logs are flowing and the query syntax is correct.",bad:"Not quite. Zero results from a Logs Insights query means no matching events were found in the logs that were delivered. It doesn't guarantee there was no root account activity — the trail could have been stopped, logs could be in a different log group, or delivery could have failed silently. Always validate the logging pipeline by running queries for known events before drawing security conclusions from zero results."},
+  3:{good:"Correct. CloudWatch metric filters evaluate log data in near real-time, but alarms are assessed at the end of each evaluation period. With a 5-minute period, the alarm will evaluate the metric within the next 5-minute window after the event. Add a small delivery delay for CloudTrail logs to reach CloudWatch (typically 5-15 minutes), so the realistic detection window is within 10-20 minutes of the event. For a Critical alarm like root account usage, this is well within an acceptable MTTR for a 3 AM incident.",bad:"Not quite. CloudWatch alarms don't fire instantaneously on each log event. The metric filter continuously counts matching log lines, and the alarm evaluates that count at the end of each period window (5 minutes in this case). Add CloudTrail's log delivery latency (typically 5-15 minutes) and the total detection window is 10-20 minutes after the event. Real-time firing would require a different pattern (EventBridge + Lambda) which we cover in Day 26."}
+};
+let state=loadState();
+function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
+function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
+function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/4*100);document.getElementById('score-val').textContent=state.correct.length+' / 4 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked;document.getElementById('pane-complete').classList.add('active');document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
+function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
+function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
+function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
+function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
+function updateChecklist(){const total=7,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
+function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
+function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const opts=document.querySelectorAll('#pane-'+idx+' .kcheck-opt');if(!opts.length)return;opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
+restoreState();
+</script>
+</body>
+</html>

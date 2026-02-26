@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 1 — AWS Account Hardening & MFA Foundation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0f14; --surface:#13161d; --surface2:#181c26;
+  --border:#1f2330; --border-hi:#2e3447;
+  --text:#c8d0e0; --muted:#5a6178; --faint:#3a3f52;
+  --accent:#4af0c4; --accent-dim:rgba(74,240,196,.08);
+  --amber:#f0924a; --violet:#8a7fff; --danger:#f05a5a;
+  --code-bg:#0a0c10; --pill:#1a1f2e;
+  --lab:#f0c84a;  --lab-dim:rgba(240,200,74,.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
+
+/* ── Layout ── */
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
+.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
+.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
+
+.lesson-nav{padding:16px 0;flex:1}
+.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.03)}
+.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}
+.nav-item.active .nav-label{color:var(--accent)}
+.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}
+.nav-item.lab-item.active .nav-label{color:var(--lab)}
+.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
+.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
+.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
+.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+
+.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+
+/* ── Topbar ── */
+.main{display:flex;flex-direction:column}
+.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
+.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
+.lesson-crumb span{color:var(--text)}
+.nav-arrows{display:flex;gap:8px}
+.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
+.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.arrow-btn:disabled{opacity:.3;cursor:default}
+
+/* ── Lesson pane ── */
+.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
+.lesson-pane.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Typography ── */
+.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.tag-concept{color:var(--violet)} .tag-warning{color:var(--amber)} .tag-security{color:var(--accent)} .tag-model{color:var(--violet)} .tag-lab{color:var(--lab)}
+.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
+.lesson-pane h1 em{font-style:italic;color:var(--accent)}
+.lab-pane h1 em{color:var(--lab)}
+.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
+.lesson-pane strong{color:#e0e6f0;font-weight:500}
+
+/* ── Callouts ── */
+.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
+.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
+.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
+.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
+.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
+.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
+
+/* ── Table ── */
+.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
+.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+.styled-table tr:hover td{background:rgba(255,255,255,.02)}
+.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--violet);white-space:nowrap}
+.styled-table .you{color:var(--accent);font-weight:500} .styled-table .aws{color:var(--muted)}
+
+/* ── Code ── */
+.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
+.code-block pre .hl{color:var(--accent)} .code-block pre .hl2{color:var(--amber)} .code-block pre .comment{color:var(--muted)}
+
+/* ── Compare cards ── */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+.compare-card{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.compare-card-head{padding:12px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;display:flex;align-items:center;gap:8px}
+.compare-card.ok .compare-card-head{background:rgba(74,240,196,.08);color:var(--accent)}
+.compare-card.warn .compare-card-head{background:rgba(240,146,74,.08);color:var(--amber)}
+.compare-card-body{padding:14px 16px;font-size:13px;line-height:1.65;color:#8a92a8}
+.compare-card-body strong{color:var(--text);display:block;margin-bottom:4px}
+
+/* ── Arch diagram ── */
+.arch-diagram{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:28px;margin:24px 0;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.9;color:#6a7490}
+.arch-diagram .node-root{color:var(--danger)} .arch-diagram .node-iam{color:var(--accent)}
+.arch-diagram .node-label{color:#5a6178;font-size:11px} .arch-diagram .node-arrow{color:var(--border-hi)}
+
+/* ── Knowledge check ── */
+.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
+.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--violet);margin-bottom:14px}
+.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
+.kcheck-options{display:flex;flex-direction:column;gap:10px}
+.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
+.kcheck-opt:hover:not(.disabled){border-color:var(--violet);background:rgba(138,127,255,.05);color:var(--text)}
+.kcheck-opt.correct{border-color:var(--accent);background:rgba(74,240,196,.07);color:var(--accent)}
+.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.07);color:var(--danger)}
+.kcheck-opt.reveal-correct{border-color:var(--accent);background:rgba(74,240,196,.04);color:#6e9e90}
+.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
+.kcheck-opt.correct .opt-key{background:var(--accent);color:var(--bg)}
+.kcheck-opt.wrong .opt-key{background:var(--danger);color:#fff}
+.kcheck-opt.reveal-correct .opt-key{background:rgba(74,240,196,.2);color:var(--accent)}
+.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
+.kcheck-feedback.show{display:block}
+.kcheck-feedback.good{background:rgba(74,240,196,.08);border:1px solid rgba(74,240,196,.2);color:#7eceb8}
+.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
+
+/* ── Lab steps ── */
+.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border);position:relative}
+.lab-step:last-child{border-bottom:none}
+.step-num-wrap{display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .3s;position:relative;z-index:1}
+.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}
+.lab-step:last-child .step-connector{display:none}
+.lab-step.completed .step-num{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.step-content{flex:1;padding-top:4px}
+.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
+.step-body{font-size:14px;color:var(--text);line-height:1.7}
+.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.step-body ul{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.step-body li{color:#a0a8bc}
+.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
+
+/* ── Checklist ── */
+.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
+.check-item:hover{border-color:var(--border-hi)}
+.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
+.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
+.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
+.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}
+.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+
+.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
+.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
+
+/* ── Lesson nav footer ── */
+.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
+.next-btn{background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px}
+.next-btn:hover{opacity:.88}
+.next-btn.lab-btn{background:var(--lab)}
+.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s}
+.prev-btn:hover{color:var(--text);border-color:var(--text)}
+.prev-btn:disabled{opacity:.3;cursor:default}
+
+/* ── Completion ── */
+.completion-card{text-align:center;padding:56px 32px}
+.completion-icon{font-size:48px;margin-bottom:20px;display:block}
+.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
+.completion-card p{color:var(--muted);max-width:420px;margin:0 auto 28px;font-size:14px}
+.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(74,240,196,.1);border:1px solid rgba(74,240,196,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
+.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
+
+/* ── Scrollbar + responsive ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.compare-grid{grid-template-columns:1fr}.lesson-topbar{padding:14px 24px}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="day-badge">Week 1 · Day 1</div>
+    <h2>AWS Account Hardening<br>& MFA Foundation</h2>
+    <div class="sidebar-meta">
+      <span class="chip">Beginner</span>
+      <span class="chip">4 lessons</span>
+      <span class="chip">1 lab</span>
+      <span class="chip">~4h</span>
+    </div>
+  </div>
+  <div class="lesson-nav">
+    <div class="nav-group-label">Lessons</div>
+    <div class="nav-item active" onclick="goTo(0)">
+      <span class="nav-num">01</span><span class="nav-label">The Shared Responsibility Model</span><span class="nav-check">✓</span>
+    </div>
+    <div class="nav-item" onclick="goTo(1)">
+      <span class="nav-num">02</span><span class="nav-label">Why the Root Account Is Dangerous</span><span class="nav-check">✓</span>
+    </div>
+    <div class="nav-item" onclick="goTo(2)">
+      <span class="nav-num">03</span><span class="nav-label">MFA — Not All Second Factors Are Equal</span><span class="nav-check">✓</span>
+    </div>
+    <div class="nav-item" onclick="goTo(3)">
+      <span class="nav-num">04</span><span class="nav-label">IAM Users vs. Root — The Right Setup</span><span class="nav-check">✓</span>
+    </div>
+    <div class="nav-group-label" style="margin-top:8px">Lab</div>
+    <div class="nav-item lab-item" onclick="goTo(4)">
+      <span class="nav-num" style="color:var(--lab)">🔬</span><span class="nav-label">Hands-on: Account Hardening</span><span class="nav-check">✓</span>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Progress</span><span id="progress-pct">0 / 5</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="lesson-topbar">
+    <div class="lesson-crumb">Day 1 &nbsp;/&nbsp; <span id="topbar-title">The Shared Responsibility Model</span></div>
+    <div class="nav-arrows">
+      <button class="arrow-btn" id="btn-prev" onclick="prev()" disabled>← Prev</button>
+      <button class="arrow-btn" id="btn-next" onclick="next()">Next →</button>
+    </div>
+  </div>
+
+  <!-- ══ LESSON 1 ══ -->
+  <div class="lesson-pane active" id="pane-0">
+    <div class="lesson-tag tag-model">Core Concept</div>
+    <h1>The Shared<br><em>Responsibility</em> Model</h1>
+    <p>Before writing a single security policy, you need to answer: <strong>whose job is it?</strong> In cloud, the shared responsibility model defines exactly that — and the split shifts based on which layer of service you use.</p>
+    <table class="styled-table">
+      <thead><tr><th>Service Type</th><th>Example</th><th>AWS secures</th><th>You secure</th></tr></thead>
+      <tbody>
+        <tr><td>IaaS</td><td>EC2</td><td class="aws">Hardware, hypervisor, network fabric</td><td class="you">OS, middleware, runtime, app code, data</td></tr>
+        <tr><td>PaaS</td><td>RDS</td><td class="aws">Everything above + OS + DB engine patches</td><td class="you">DB config, access control, data, encryption</td></tr>
+        <tr><td>SaaS</td><td>S3</td><td class="aws">Almost everything beneath your data</td><td class="you">Bucket policies, encryption settings, identities</td></tr>
+      </tbody>
+    </table>
+    <p><strong>A misconfigured S3 bucket exposing customer data is not an AWS failure — it is yours.</strong> AWS secures the storage service. You are responsible for how you configure access to it.</p>
+    <div class="callout breach"><div class="callout-title">⚠ Real Breach — Capital One (2019)</div>An attacker exploited a misconfigured WAF on EC2 to access an IAM role, then used its excessive permissions to exfiltrate data from S3. AWS's infrastructure was untouched — every failure was a customer-side configuration mistake.</div>
+    <div class="callout insight"><div class="callout-title">💡 The Insight</div>The 2025 Verizon DBIR found 62% of cloud breaches involve customer-side misconfigurations. The shared responsibility model is not just a diagram — it's the explanation for why most cloud breaches happen.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">An attacker accesses your S3 bucket because you forgot to restrict public access. Who is responsible?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">A</span>AWS — they operate S3 and should prevent unauthorised access</button>
+        <button class="kcheck-opt" onclick="check(this,true,0)"><span class="opt-key">B</span>You — S3 bucket policies and access configuration are the customer's responsibility</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">C</span>Shared equally — AWS should have detected the misconfiguration</button>
+        <button class="kcheck-opt" onclick="check(this,false,0)"><span class="opt-key">D</span>Neither — public buckets are a supported configuration</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-0"></div>
+    </div>
+    <div class="lesson-nav-footer">
+      <button class="prev-btn" disabled>← Previous</button>
+      <button class="next-btn" onclick="next()">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ══ LESSON 2 ══ -->
+  <div class="lesson-pane" id="pane-1">
+    <div class="lesson-tag tag-warning">Security Risk</div>
+    <h1>Why the Root Account<br>Is <em>Dangerous</em></h1>
+    <p>Root has one defining characteristic no IAM policy or SCP can touch: <strong>unconditional, unrestricted access to everything in the account.</strong></p>
+    <div class="callout warning">
+      <div class="callout-title">What Root Can Do That Nobody Else Can</div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;margin-top:4px">
+        <li>🗑️ &nbsp;Delete every CloudTrail log — destroying all audit evidence</li>
+        <li>🔒 &nbsp;Close your AWS account entirely</li>
+        <li>🔑 &nbsp;Remove MFA from all users, including itself</li>
+        <li>💳 &nbsp;Access billing information regardless of IAM policies</li>
+        <li>🛑 &nbsp;Override any Service Control Policy in your organisation</li>
+      </ul>
+    </div>
+    <div class="callout tip">
+      <div class="callout-title">The Four Rules for Root</div>
+      <ol style="padding-left:18px;display:flex;flex-direction:column;gap:8px;margin-top:4px">
+        <li><strong>Enable MFA immediately</strong> — before anything else</li>
+        <li><strong>Never create access keys for root</strong> — API access without MFA</li>
+        <li><strong>Never use root for day-to-day work</strong> — create a separate IAM admin user</li>
+        <li><strong>Store root credentials in a password manager</strong> and treat the MFA device like a physical key</li>
+      </ol>
+    </div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">Why should you never create access keys for the AWS root account?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">A</span>Root access keys are less performant than IAM user keys</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">B</span>AWS limits root to 2 access keys, making automation unreliable</button>
+        <button class="kcheck-opt" onclick="check(this,true,1)"><span class="opt-key">C</span>Access keys allow full API access without MFA, bypassing the main protection on root credentials</button>
+        <button class="kcheck-opt" onclick="check(this,false,1)"><span class="opt-key">D</span>Root access keys expire after 90 days and can't be rotated</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-1"></div>
+    </div>
+    <div class="lesson-nav-footer">
+      <button class="prev-btn" onclick="prev()">← Previous</button>
+      <button class="next-btn" onclick="next()">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ══ LESSON 3 ══ -->
+  <div class="lesson-pane" id="pane-2">
+    <div class="lesson-tag tag-security">Security Depth</div>
+    <h1>MFA — Not All<br>Second Factors Are <em>Equal</em></h1>
+    <p>Different MFA types have meaningfully different security postures, especially against phishing — the most common attack vector against credentials.</p>
+    <div class="compare-grid">
+      <div class="compare-card warn">
+        <div class="compare-card-head"><span>⚠</span> TOTP Apps</div>
+        <div class="compare-card-body">
+          <strong>Google Authenticator, Authy, Microsoft Authenticator</strong>
+          Time-based 6-digit code refreshing every 30 seconds.<br><br>
+          <strong style="color:var(--amber)">Weakness — real-time phishing:</strong> An attacker proxies your credentials and TOTP code to real AWS before the 30-second window closes.
+        </div>
+      </div>
+      <div class="compare-card ok">
+        <div class="compare-card-head"><span>✓</span> Hardware Keys</div>
+        <div class="compare-card-body">
+          <strong>YubiKey, any FIDO2/WebAuthn device</strong>
+          Cryptographic handshake directly with your browser.<br><br>
+          <strong style="color:var(--accent)">Why phishing fails:</strong> The key verifies the exact domain cryptographically. A fake login page — regardless of how convincing — gets nothing.
+        </div>
+      </div>
+    </div>
+    <div class="callout insight"><div class="callout-title">💡 Domain Binding</div>FIDO2/WebAuthn credentials are bound to the origin domain at registration. A credential registered at <strong>signin.aws.amazon.com</strong> will never respond to any other domain — even one that looks identical.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">An attacker proxies a user's credentials and TOTP code to real AWS in real time and gains access. Which MFA type would have prevented this?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">A</span>A different TOTP app (e.g. Authy instead of Google Authenticator)</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">B</span>SMS-based one-time codes</button>
+        <button class="kcheck-opt" onclick="check(this,true,2)"><span class="opt-key">C</span>A hardware FIDO2/WebAuthn key — it verifies the real domain cryptographically and refuses fake pages</button>
+        <button class="kcheck-opt" onclick="check(this,false,2)"><span class="opt-key">D</span>A longer TOTP code (8 digits) to make guessing harder</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-2"></div>
+    </div>
+    <div class="lesson-nav-footer">
+      <button class="prev-btn" onclick="prev()">← Previous</button>
+      <button class="next-btn" onclick="next()">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ══ LESSON 4 ══ -->
+  <div class="lesson-pane" id="pane-3">
+    <div class="lesson-tag tag-concept">Architecture</div>
+    <h1>IAM Users vs. Root —<br><em>The Right Setup</em></h1>
+    <p>Root is locked away. You need an identity for daily work — an IAM admin user.</p>
+    <div class="arch-diagram">
+      <span class="node-root">Root account</span>&nbsp;&nbsp;<span class="node-label">── MFA enabled · no access keys · rarely used</span><br>
+      <span class="node-arrow">      │</span><br>
+      <span class="node-arrow">      └──</span>&nbsp;<span class="node-iam">IAM User: "admin"</span>&nbsp;&nbsp;<span class="node-label">← AdministratorAccess policy</span><br>
+      <span class="node-arrow">                │</span><br>
+      <span class="node-arrow">                └──</span>&nbsp;<span style="color:#c8d0e0">All labs and daily work happen here</span>
+    </div>
+    <p><strong>1. Habit formation.</strong> Every enterprise AWS account enforces this separation. Build the habit now.</p>
+    <p><strong>2. CloudTrail logging.</strong> Root actions appear as <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--violet);background:var(--pill);padding:1px 5px;border-radius:3px">userIdentity.type: Root</code> — a red flag in any audit. IAM user actions carry a clear, searchable identity.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">CloudTrail · userIdentity</span></div>
+      <pre><span class="comment">// IAM user — clear, auditable identity</span>
+{ "type": <span class="hl">"IAMUser"</span>, "userName": <span class="hl">"admin"</span> }
+
+<span class="comment">// Root — immediate red flag in any audit</span>
+{ "type": <span class="hl2">"Root"</span> }</pre>
+    </div>
+    <div class="callout tip"><div class="callout-title">✓ Also Enable MFA on Your IAM Admin User</div>AdministratorAccess is nearly as powerful as root. Add a separate TOTP entry in your authenticator app and enable MFA on the IAM user too.</div>
+    <div class="kcheck">
+      <div class="kcheck-label">Knowledge Check</div>
+      <div class="kcheck-q">You need to create a new IAM role for a Lambda function. Which identity should you use?</div>
+      <div class="kcheck-options">
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">A</span>Root — it has unrestricted access and will definitely have permission</button>
+        <button class="kcheck-opt" onclick="check(this,true,3)"><span class="opt-key">B</span>Your IAM admin user — root should be reserved for emergencies only</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">C</span>A new IAM user created specifically for this one task</button>
+        <button class="kcheck-opt" onclick="check(this,false,3)"><span class="opt-key">D</span>Either — they have the same permissions so there's no difference</button>
+      </div>
+      <div class="kcheck-feedback" id="fb-3"></div>
+    </div>
+    <div class="lesson-nav-footer">
+      <button class="prev-btn" onclick="prev()">← Previous</button>
+      <button class="next-btn lab-btn" onclick="next()">Start Lab →</button>
+    </div>
+  </div>
+
+  <!-- ══ LAB ══ -->
+  <div class="lesson-pane lab-pane" id="pane-4">
+    <div class="lesson-tag tag-lab">🔬 Hands-On Lab</div>
+    <h1>Account<br><em>Hardening</em></h1>
+    <p>Time to implement everything from the lessons. Work through each step in order — you need an AWS console open alongside this page.</p>
+    <div class="callout lab-note"><div class="callout-title">⚡ Before You Start</div>The shell script <code>week-1/labs/day-01-iam-hardening.sh</code> automates Steps 3–4 if you prefer CLI. Steps 1 and 2 require the console — MFA for root cannot be enabled programmatically.</div>
+
+    <div class="lab-steps">
+      <div class="lab-step" id="step-0">
+        <div class="step-num-wrap"><div class="step-num">1</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Create Your AWS Free Tier Account <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <p style="margin-bottom:10px;color:#8a92a8"><em>Skip if you already have a personal AWS account.</em></p>
+            <ol>
+              <li>Go to <code>https://aws.amazon.com/free/</code> → <strong>Create a Free Account</strong></li>
+              <li>Enter your email and choose an account name (e.g. <code>yourname-security-lab</code>)</li>
+              <li>Choose <strong>Personal</strong> account type</li>
+              <li>Enter a credit card — you won't be charged if you stay in Free Tier limits and run cleanup scripts</li>
+              <li>Complete phone verification → choose <strong>Basic support plan</strong> (free)</li>
+              <li>Log in at <code>https://console.aws.amazon.com</code></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab-step" id="step-1">
+        <div class="step-num-wrap"><div class="step-num">2</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Enable MFA on Root <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~15 min · Most important step</span></div>
+          <div class="step-body">
+            <ol>
+              <li>Log in with root credentials → top-right → click account name → <strong>Security credentials</strong></li>
+              <li>Scroll to <strong>Multi-factor authentication (MFA)</strong> → <strong>Assign MFA device</strong></li>
+              <li>Choose <strong>Authenticator app</strong> → scan QR code with Google Authenticator / Authy / Microsoft Authenticator<br><em style="color:var(--muted);font-size:12px">(or choose Security key if you have a YubiKey)</em></li>
+              <li>Enter two consecutive 6-digit codes to confirm sync → <strong>Add MFA</strong></li>
+            </ol>
+            <div class="callout tip" style="margin-top:12px;margin-bottom:0"><div class="callout-title">✓ Verify</div>MFA section shows your device as "Active". Log out and back in — AWS should prompt for your MFA code.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab-step" id="step-2">
+        <div class="step-num-wrap"><div class="step-num">3</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Configure a $5 Billing Alert <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~10 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>AWS Console → search <strong>Budgets</strong> → <strong>AWS Budgets</strong></li>
+              <li><strong>Create budget</strong> → <strong>Use a template</strong> → <strong>Monthly cost budget</strong></li>
+              <li>Budget name: <code>security-lab-budget</code></li>
+              <li>Budgeted amount: <code>5.00</code> USD</li>
+              <li>Email recipients: your email address → <strong>Create budget</strong></li>
+            </ol>
+            <p style="color:#8a92a8;font-size:13px;margin-top:8px">This alert fires when AWS <em>forecasts</em> your month's spend will exceed $5 — giving you time to act before you're charged.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab-step" id="step-3">
+        <div class="step-num-wrap"><div class="step-num">4</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Create an IAM Admin User <span style="font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace">~25 min</span></div>
+          <div class="step-body">
+            <ol>
+              <li>AWS Console → <strong>IAM</strong> → <strong>Users</strong> → <strong>Create user</strong></li>
+              <li>Username: <code>admin</code> (or your name, no spaces)</li>
+              <li>Check ✅ <strong>Provide user access to the AWS Management Console</strong></li>
+              <li>Select <strong>I want to create an IAM user</strong> → set a strong password (16+ chars) → uncheck "must change password"</li>
+              <li><strong>Permissions:</strong> Add user to group → <strong>Create group</strong> → name: <code>Administrators</code> → attach <code>AdministratorAccess</code> → Create group → Add user → <strong>Create user</strong></li>
+              <li><strong>Enable MFA on this user:</strong> IAM → Users → click your user → Security credentials tab → Assign MFA device → follow the same steps as root (use a <em>different</em> TOTP entry)</li>
+              <li>Note your sign-in URL: <code>https://&lt;account-id&gt;.signin.aws.amazon.com/console</code></li>
+              <li><strong>Log out of root. Log back in as your new IAM user.</strong></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Completion Checklist</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Tick each item as you complete it. Your progress is saved automatically.</p>
+    <div class="checklist-progress">
+      <div class="checklist-progress-bar"><div class="checklist-progress-fill" id="cl-fill"></div></div>
+      <span class="checklist-progress-label" id="cl-label">0 / 8</span>
+    </div>
+    <div class="checklist" id="checklist">
+      <div class="check-item" onclick="toggleCheck(this,0)"><div class="check-box">✓</div><div class="check-text">AWS account accessible at https://console.aws.amazon.com</div></div>
+      <div class="check-item" onclick="toggleCheck(this,1)"><div class="check-box">✓</div><div class="check-text">MFA enabled on root (IAM → Security credentials → MFA device shows "Active")</div></div>
+      <div class="check-item" onclick="toggleCheck(this,2)"><div class="check-box">✓</div><div class="check-text">No access keys created for root (Access keys section says "You don't have any access keys")</div></div>
+      <div class="check-item" onclick="toggleCheck(this,3)"><div class="check-box">✓</div><div class="check-text">AWS Budgets alert active at $5 with your email</div></div>
+      <div class="check-item" onclick="toggleCheck(this,4)"><div class="check-box">✓</div><div class="check-text">IAM group <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--violet)">Administrators</code> exists with <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--violet)">AdministratorAccess</code> attached</div></div>
+      <div class="check-item" onclick="toggleCheck(this,5)"><div class="check-box">✓</div><div class="check-text">IAM admin user created and added to Administrators group</div></div>
+      <div class="check-item" onclick="toggleCheck(this,6)"><div class="check-box">✓</div><div class="check-text">MFA enabled on IAM admin user (separate TOTP entry from root)</div></div>
+      <div class="check-item" onclick="toggleCheck(this,7)"><div class="check-box">✓</div><div class="check-text">Currently logged in as IAM admin user, not root</div></div>
+    </div>
+
+    <h2 style="font-family:'DM Serif Display',serif;font-size:20px;color:#e4eaf6;margin:32px 0 16px;font-weight:400">Portfolio Commit</h2>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre>git add screenshots/day-01-*.png
+git commit -m <span class="hl">"Day 01: Root MFA enabled, $5 budget alert, IAM admin user with MFA"</span>
+git push</pre>
+    </div>
+
+    <div class="lesson-nav-footer">
+      <button class="prev-btn" onclick="prev()">← Previous</button>
+      <button class="next-btn lab-btn" onclick="finish()">Complete Day 1 ✓</button>
+    </div>
+  </div>
+
+  <!-- ══ COMPLETION ══ -->
+  <div class="lesson-pane" id="pane-complete">
+    <div class="completion-card">
+      <span class="completion-icon">🔒</span>
+      <h1>Day 1 Complete</h1>
+      <p>You understand the shared responsibility model, why root must be locked away, how phishing-resistant MFA works, and the correct account structure for this programme.</p>
+      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> checklist items</div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+        <button class="prev-btn" onclick="goTo(0);resetAll()">↩ Review</button>
+        <a href="../../index.html" style="text-decoration:none"><button class="next-btn" style="background:var(--pill);color:var(--muted);border:1px solid var(--border-hi)">← Course Index</button></a>
+        <a href="day-02.html"><button class="next-btn lab-btn">Day 2 →</button></a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+const STORAGE_KEY = 'csm-day01';
+const TOTAL = 5; // 4 lessons + 1 lab
+const titles = [
+  'The Shared Responsibility Model',
+  'Why the Root Account Is Dangerous',
+  'MFA — Not All Second Factors Are Equal',
+  'IAM Users vs. Root — The Right Setup',
+  'Hands-on: Account Hardening'
+];
+const fb = {
+  0:{good:"Correct. S3 bucket policies, encryption settings, and public access blocks are the customer's responsibility. AWS secures the S3 service infrastructure, not how you configure it.",bad:"Not quite. The shared responsibility model places data access configuration on the customer's side. AWS is responsible for the underlying service, not how you configure bucket-level access."},
+  1:{good:"Correct. Access keys allow full programmatic AWS API access without any MFA challenge. A stolen root access key gives unrestricted account access with no second factor.",bad:"Not quite. The critical issue is that API access via access keys bypasses MFA entirely — no physical device or TOTP code required."},
+  2:{good:"Correct. A FIDO2/WebAuthn key cryptographically binds to the exact origin domain. On a fake login page the domain check fails and the key refuses to authenticate.",bad:"Not quite. SMS codes and longer TOTP codes are still time-based secrets that can be relayed in real time. Only hardware FIDO2 keys verify the page domain as part of the cryptographic handshake."},
+  3:{good:"Correct. Your IAM admin user has AdministratorAccess and is the right identity for all routine tasks. Root should only be used for tasks that genuinely require it.",bad:"Not quite. Use your IAM admin user. Root usage should be minimised — any root action in CloudTrail is a red flag worth investigating."}
+};
+
+let state = loadState();
+
+function loadState(){
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if(s) return JSON.parse(s);
+  } catch(e){}
+  return {current:0, done:[], correct:[], answered:[], checks:[]};
+}
+
+function saveState(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+}
+
+function goTo(n){
+  document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  state.current = n;
+  document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');
+  const items = document.querySelectorAll('.nav-item');
+  if(items[n]) items[n].classList.add('active');
+  document.getElementById('topbar-title').textContent = titles[n]||'Complete';
+  document.getElementById('btn-prev').disabled = (n===0);
+  document.getElementById('btn-next').disabled = (n>=TOTAL-1);
+  window.scrollTo(0,0);
+  saveState();
+  updateProgress();
+}
+
+function next(){ if(state.current<TOTAL-1) goTo(state.current+1); }
+function prev(){ if(state.current>0) goTo(state.current-1); }
+
+function finish(){
+  markDone(state.current);
+  document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  const pct = Math.round(state.correct.length/4*100);
+  document.getElementById('score-val').textContent = state.correct.length+' / 4 ('+pct+'%)';
+  const checked = state.checks.filter(Boolean).length;
+  document.getElementById('lab-score-val').textContent = checked+' / 8';
+  document.getElementById('pane-complete').classList.add('active');
+  document.getElementById('topbar-title').textContent = 'Complete';
+  document.getElementById('btn-prev').disabled = true;
+  document.getElementById('btn-next').disabled = true;
+  saveState();
+}
+
+function markDone(n){
+  if(!state.done.includes(n)) state.done.push(n);
+  const items = document.querySelectorAll('.nav-item');
+  if(items[n]) items[n].classList.add('done');
+  updateProgress();
+}
+
+function updateProgress(){
+  const count = state.done.length;
+  document.getElementById('progress-pct').textContent = count+' / '+TOTAL;
+  document.getElementById('progress-fill').style.width = (count/TOTAL*100)+'%';
+}
+
+function check(btn, isCorrect, idx){
+  if(state.answered.includes(idx)) return;
+  state.answered.push(idx);
+  const opts = btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');
+  opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none'});
+  const fbEl = document.getElementById('fb-'+idx);
+  if(isCorrect){
+    btn.classList.add('correct');
+    fbEl.className='kcheck-feedback show good';
+    fbEl.textContent='✓ '+fb[idx].good;
+    if(!state.correct.includes(idx)) state.correct.push(idx);
+  } else {
+    btn.classList.add('wrong');
+    fbEl.className='kcheck-feedback show bad';
+    fbEl.textContent='✗ '+fb[idx].bad;
+    opts.forEach(o=>{ if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true')) o.classList.add('reveal-correct'); });
+  }
+  markDone(idx);
+  saveState();
+}
+
+function toggleCheck(el, idx){
+  if(!state.checks[idx]) state.checks[idx] = false;
+  state.checks[idx] = !state.checks[idx];
+  el.classList.toggle('checked', state.checks[idx]);
+  updateChecklist();
+  saveState();
+}
+
+function updateChecklist(){
+  const total = 8;
+  const checked = state.checks.filter(Boolean).length;
+  document.getElementById('cl-fill').style.width = (checked/total*100)+'%';
+  document.getElementById('cl-label').textContent = checked+' / '+total;
+  if(checked===total && !state.done.includes(4)) markDone(4);
+}
+
+function copyCode(btn){
+  const pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(()=>{
+    btn.textContent='copied!'; setTimeout(()=>btn.textContent='copy',1500);
+  });
+}
+
+function resetAll(){
+  state = {current:0, done:[], correct:[], answered:[], checks:[]};
+  saveState();
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('done'));
+  document.querySelectorAll('.kcheck-opt').forEach(o=>{o.classList.remove('correct','wrong','reveal-correct','disabled');o.style.pointerEvents='';});
+  document.querySelectorAll('.kcheck-feedback').forEach(f=>{f.className='kcheck-feedback';f.textContent='';});
+  document.querySelectorAll('.check-item').forEach(i=>i.classList.remove('checked'));
+  updateChecklist();
+  updateProgress();
+  goTo(0);
+}
+
+// Restore state on load
+function restoreState(){
+  state.done.forEach(n=>{
+    const items = document.querySelectorAll('.nav-item');
+    if(items[n]) items[n].classList.add('done');
+  });
+  state.answered.forEach(idx=>{
+    const opts = document.querySelectorAll(`#pane-${idx} .kcheck-opt`);
+    opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none'});
+    // re-show feedback
+    const correctOpt = Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));
+    const fbEl = document.getElementById('fb-'+idx);
+    if(state.correct.includes(idx)){
+      if(correctOpt) correctOpt.classList.add('correct');
+      if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}
+    } else {
+      opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true')) o.classList.add('reveal-correct')});
+      if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}
+    }
+  });
+  state.checks.forEach((v,i)=>{
+    if(v){
+      const items = document.querySelectorAll('.check-item');
+      if(items[i]) items[i].classList.add('checked');
+    }
+  });
+  updateChecklist();
+  updateProgress();
+  goTo(state.current||0);
+}
+
+restoreState();
+</script>
+</body>
+</html>
