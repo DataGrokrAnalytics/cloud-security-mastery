@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cloud Security Mastery — Glossary</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #0b0f1a;
+      --surface:   #111827;
+      --border:    #1e2d45;
+      --accent:    #00e5c0;
+      --accent2:   #ff6b6b;
+      --accent3:   #ffd166;
+      --text:      #e2e8f0;
+      --muted:     #8896a8;
+      --tag-bg:    rgba(0,229,192,.1);
+      --tag-text:  #00e5c0;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ───────────────────────────────────── */
+    header {
+      position: relative;
+      padding: 72px 48px 56px;
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 120% at 60% -20%, rgba(0,229,192,.12), transparent 60%),
+                  radial-gradient(ellipse 40% 60% at 90% 100%, rgba(255,107,107,.07), transparent 60%);
+      pointer-events: none;
+    }
+    .header-tag {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid rgba(0,229,192,.3);
+      padding: 4px 12px;
+      border-radius: 2px;
+      margin-bottom: 20px;
+    }
+    header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      line-height: 1.1;
+      max-width: 640px;
+    }
+    header h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    header p {
+      color: var(--muted);
+      font-size: .95rem;
+      margin-top: 14px;
+      max-width: 520px;
+      line-height: 1.7;
+    }
+    .stats-row {
+      display: flex;
+      gap: 40px;
+      margin-top: 36px;
+      flex-wrap: wrap;
+    }
+    .stat { display: flex; flex-direction: column; gap: 4px; }
+    .stat-num {
+      font-family: 'DM Mono', monospace;
+      font-size: 1.6rem;
+      color: var(--accent);
+    }
+    .stat-label { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+
+    /* ── CONTROLS ────────────────────────────────── */
+    .controls {
+      display: flex;
+      gap: 12px;
+      padding: 24px 48px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      align-items: center;
+      background: rgba(17,24,39,.8);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 220px;
+      max-width: 400px;
+    }
+    .search-wrap svg {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+    #search {
+      width: 100%;
+      padding: 10px 14px 10px 40px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    #search:focus { border-color: var(--accent); }
+    #search::placeholder { color: var(--muted); }
+
+    .filter-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: .78rem;
+      padding: 7px 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .15s;
+      letter-spacing: .04em;
+    }
+    .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #0b0f1a; font-weight: 600; }
+
+    .count-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: .78rem;
+      color: var(--muted);
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    /* ── ALPHA INDEX ─────────────────────────────── */
+    .alpha-index {
+      display: flex;
+      gap: 4px;
+      padding: 16px 48px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .alpha-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: .78rem;
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .alpha-btn:hover { color: var(--text); border-color: var(--border); }
+    .alpha-btn.has-terms { color: var(--text); }
+    .alpha-btn.active { background: var(--surface); border-color: var(--accent); color: var(--accent); }
+
+    /* ── MAIN CONTENT ────────────────────────────── */
+    main {
+      padding: 48px 48px 80px;
+      max-width: 1200px;
+    }
+
+    .letter-section { margin-bottom: 56px; }
+    .letter-heading {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .letter-heading h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 3rem;
+      line-height: 1;
+      color: var(--accent);
+      opacity: .25;
+      user-select: none;
+    }
+    .letter-heading hr {
+      flex: 1;
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+
+    .terms-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+    }
+
+    .term-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 22px 24px;
+      transition: border-color .2s, transform .15s;
+      cursor: default;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .term-card:hover {
+      border-color: rgba(0,229,192,.3);
+      transform: translateY(-2px);
+    }
+
+    .term-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .term-name {
+      font-family: 'DM Mono', monospace;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #fff;
+      line-height: 1.3;
+    }
+    .term-abbr {
+      font-size: .78rem;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      margin-top: 2px;
+    }
+    .term-level {
+      flex-shrink: 0;
+      font-size: .7rem;
+      font-family: 'DM Mono', monospace;
+      padding: 3px 8px;
+      border-radius: 3px;
+      letter-spacing: .06em;
+    }
+    .level-foundational  { background: rgba(255,209,102,.12); color: var(--accent3); border: 1px solid rgba(255,209,102,.25); }
+    .level-intermediate  { background: rgba(0,229,192,.1);    color: var(--accent);  border: 1px solid rgba(0,229,192,.25);  }
+    .level-advanced      { background: rgba(255,107,107,.1);  color: var(--accent2); border: 1px solid rgba(255,107,107,.25);}
+
+    .term-def {
+      font-size: .88rem;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+    .term-def strong { color: var(--text); font-weight: 500; }
+
+    .term-footer {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .tag {
+      font-size: .7rem;
+      font-family: 'DM Mono', monospace;
+      padding: 2px 8px;
+      border-radius: 2px;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      letter-spacing: .04em;
+    }
+    .tag.week { background: rgba(255,107,107,.1); color: var(--accent2); }
+    .tag.standard { background: rgba(255,209,102,.1); color: var(--accent3); }
+
+    /* ── NO RESULTS ─────────────────────────────── */
+    #no-results {
+      display: none;
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--muted);
+    }
+    #no-results svg { opacity: .3; margin-bottom: 20px; }
+    #no-results p { font-size: 1.1rem; }
+
+    /* ── SCROLLBAR ──────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── RESPONSIVE ─────────────────────────────── */
+    @media (max-width: 640px) {
+      header, .controls, .alpha-index, main { padding-left: 20px; padding-right: 20px; }
+      .terms-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────── -->
+<header>
+  <div class="header-tag">Cloud Security Mastery Program</div>
+  <h1>Security Glossary &amp;<br><em>Reference Guide</em></h1>
+  <p>Every term, acronym, and framework covered across the 4-week program — from foundational concepts to advanced cloud-native patterns.</p>
+  <div class="stats-row">
+    <div class="stat"><span class="stat-num" id="total-count">—</span><span class="stat-label">Terms</span></div>
+    <div class="stat"><span class="stat-num">4</span><span class="stat-label">Weeks</span></div>
+    <div class="stat"><span class="stat-num">3</span><span class="stat-label">Levels</span></div>
+    <div class="stat"><span class="stat-num">10+</span><span class="stat-label">Frameworks</span></div>
+  </div>
+</header>
+
+<!-- ── CONTROLS ───────────────────────────────── -->
+<div class="controls">
+  <div class="search-wrap">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input id="search" type="text" placeholder="Search terms, acronyms, frameworks…"/>
+  </div>
+  <div class="filter-group">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="foundational">Foundational</button>
+    <button class="filter-btn" data-filter="intermediate">Intermediate</button>
+    <button class="filter-btn" data-filter="advanced">Advanced</button>
+  </div>
+  <span class="count-badge" id="count-badge"></span>
+</div>
+
+<!-- ── ALPHA INDEX ────────────────────────────── -->
+<div class="alpha-index" id="alpha-index"></div>
+
+<!-- ── MAIN ───────────────────────────────────── -->
+<main id="main">
+  <div id="no-results">
+    <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <p>No terms match your search.</p>
+  </div>
+</main>
+
+<script>
+const TERMS = [
+  // ── A ─────────────────────────────────────────────────────────────────
+  {
+    name: "Access Analyzer",
+    abbr: "IAM Access Analyzer",
+    level: "intermediate",
+    def: "An AWS service that uses <strong>automated reasoning</strong> to identify resources shared with external principals. Surfaces findings categorized as Internet (15%), Cross-account (25%), and Kubernetes (10%) access patterns. Core tool for CIEM operations.",
+    tags: ["CIEM", "IAM", "Week 2"],
+    weeks: ["week2"]
+  },
+  {
+    name: "AWS Artifact",
+    abbr: null,
+    level: "foundational",
+    def: "On-demand repository for <strong>AWS compliance reports</strong> including SOC 2 Type II and PCI DSS. Eliminates support ticket workflows and reduces compliance evidence effort by approximately 60%.",
+    tags: ["Compliance", "SOC2", "PCI", "Week 1"],
+    weeks: ["week1"]
+  },
+  {
+    name: "AWS Budgets",
+    abbr: null,
+    level: "foundational",
+    def: "AWS cost monitoring service used to configure <strong>spending alerts</strong>. The program recommends a $5 alert to ensure Free Tier usage doesn't incur unexpected charges during lab exercises.",
+    tags: ["FinOps", "Week 1"],
+    weeks: ["week1"]
+  },
+  {
+    name: "AWS Config",
+    abbr: null,
+    level: "foundational",
+    def: "Continuous configuration assessment service that tracks <strong>500+ resource types</strong> and provides 100+ managed rules. Foundation of CSPM on AWS — evaluates resources against desired configurations like the CIS AWS Foundations Benchmark.",
+    tags: ["CSPM", "Compliance", "Week 1"],
+    weeks: ["week1"]
+  },
+  {
+    name: "AWS Inspector",
+    abbr: null,
+    level: "intermediate",
+    def: "Automated vulnerability management service providing <strong>5,000+ CVE coverage</strong> with CVSS scoring and exploit predictions. Integrates with ECR for container scanning and EventBridge for auto-remediation workflows.",
+    tags: ["Vulnerability", "CVE", "Week 3"],
+    weeks: ["week3"]
+  },
+  {
+    name: "AWS Macie",
+    abbr: null,
+    level: "intermediate",
+    def: "ML-powered <strong>Data Loss Prevention (DLP)</strong> service that discovers PII (SSN, credit cards, passports), PHI (HIPAA-covered data), and secrets in S3. Carries ~15% false positive rate requiring custom regex tuning.",
+    tags: ["DLP", "PII", "HIPAA", "Week 3"],
+    weeks: ["week3"]
+  },
+  {
+    name: "AWS Organizations",
+    abbr: null,
+    level: "foundational",
+    def: "Account management service enabling <strong>hierarchical governance</strong> via Organizational Units (OUs). Serves as the attachment point for Service Control Policies that flow from Root → OU → Account → Role.",
+    tags: ["Governance", "SCP", "Week 1"],
+    weeks: ["week1"]
+  },
+
+  // ── B ─────────────────────────────────────────────────────────────────
+  {
+    name: "Break-Glass Account",
+    abbr: null,
+    level: "intermediate",
+    def: "Emergency access pattern providing <strong>elevated privileges outside normal JIT workflows</strong>, typically requiring multi-party approval and generating high-fidelity audit trails. Used when standard access paths are unavailable.",
+    tags: ["PAM", "IAM", "Week 2"],
+    weeks: ["week2"]
+  },
+
+  // ── C ─────────────────────────────────────────────────────────────────
+  {
+    name: "CDR",
+    abbr: "Cloud Detection & Response",
+    level: "advanced",
+    def: "The detection and investigation pillar of CNAPP covering <strong>runtime threat detection</strong>, behavioral analytics, and incident response in cloud environments. Includes GuardDuty, CloudTrail analysis, and SOAR automation.",
+    tags: ["CNAPP", "SOC", "Week 4"],
+    weeks: ["week4"]
+  },
+  {
+    name: "Checkov",
+    abbr: null,
+    level: "intermediate",
+    def: "Open-source <strong>Infrastructure-as-Code (IaC) static analysis</strong> tool that scans CloudFormation, Terraform, and Kubernetes manifests for misconfigurations before deployment. Supports PCI DSS 4.0 Req 6.4.3.",
+    tags: ["IaC", "DevSecOps", "Week 2"],
+    weeks: ["week2"]
+  },
+  {
+    name: "CIEM",
+    abbr: "Cloud Infrastructure Entitlement Management",
+    level: "intermediate",
+    def: "Gartner Hype Cycle 2024 category addressing <strong>entitlement sprawl</strong> — identities having 10× more permissions than needed. CIEM tools discover, analyze, and right-size cloud permissions across multi-cloud environments.",
+    tags: ["IAM", "Zero Trust", "Week 2"],
+    weeks: ["week2"]
+  },
+  {
+    name: "CIS AWS Foundations Benchmark",
+    abbr: "CIS AFB",
+    level: "foundational",
+    def: "Industry-standard security configuration baseline with <strong>60+ production controls</strong> for AWS accounts (v1.4.0). Covers IAM, logging, monitoring, networking, and storage. Measurable via Security Hub as a compliance score.",
+    tags: ["Standard", "Compliance", "Week 1"],
+    weeks: ["week1"],
+    special: "standard"
+  },
+  {
+    name: "CloudFormation",
+    abbr: "CFN",
+    level: "intermediate",
+    def: "AWS <strong>Infrastructure-as-Code</strong> service allowing resources to be defined in JSON/YAML templates. Security best practice: scan templates with Checkov before deployment to catch misconfigurations pre-provisioning.",
+    tags: ["IaC", "DevSecOps", "Week 2"],
+    weeks: ["week2"]
+  },
+  {
+    name: "CloudTrail",
+    abbr: null,
+    level: "foundational",
+    def: "AWS governance service that records all <strong>API calls and account activity</strong> across regions. Provides data events for S3/Lambda granularity. Critical for SIEM ingestion, forensic investigation, and compliance audit trails.",
+    tags: ["Logging", "Audit", "SIEM", "Week 4"],
+    weeks: ["week4"]
+  },
+  {
+    name: "CloudWatch",
+    abbr: null,
+    level: "foundational",
+    def: "AWS observability service providing <strong>Logs Insights</strong> (KQL-like queries with ML anomaly detection), metrics, and alarms. Used as the SIEM layer ingesting CloudTrail events for threat detection rule deployment.",
+    tags: ["SIEM", "Monitoring", "Week 4"],
+    weeks: ["week4"]
+  },
+  {
+    name: "CNAPP",
+    abbr: "Cloud-Native Application Protection Platform",
+    level: "advanced",
+    def: "Gartner 2025 category unifying <strong>CSPM + CWPP + CIEM + CDR</strong> into a single platform. AWS Security Hub acts as a CNAPP by aggregating findings from Config, GuardDuty, and Inspector with normalized 0-100 risk scoring.",
+    tags: ["CSPM", "CWPP", "CIEM", "CDR", "Week 4"],
+    weeks: ["week4"]
+  },
+  {
+    name: "CSPM",
+    abbr: "Cloud Security Posture Management",
+    level: "foundational",
+    def: "Gartner-defined category of tools providing <strong>continuous scanning for cloud misconfigurations</strong>. AWS Config is the native CSPM tool. Key stat: misconfiguration causes 80% of cloud breaches (Palo Alto 2025 Cloud Threat Report).",
+    tags: ["Misconfiguration", "Compliance", "Week 1"],
+    weeks: ["week1"]
+  },
+  {
+    name: "CVE",
+    abbr: "Common Vulnerabilities and Exposures",
+    level: "foundational",
+    def: "Standardized identifier for publicly known <strong>software security vulnerabilities</strong>. CVSS score (0-10) prioritizes severity. AWS Inspector covers 5,000+ CVEs. Patch SLAs: 30 days for Critical, 90 days for High.",
+    tags: ["Vulnerability", "Patching", "Week 3"],
+    weeks: ["week3"]
+  },
+  {
+    name: "CWPP",
+    abbr: "Cloud Workload Protection Platform",
+    level: "advanced",
+    def: "Security category covering <strong>runtime protection of cloud workloads</strong> including VMs, containers, and serverless functions. Encompasses vulnerability scanning (Inspector), container security (ECR/ECS), and serverless policy enforcement.",
+    tags: ["CNAPP", "Runtime", "Week 3"],
+    weeks: ["week3"]
+  },
+
+  // ── D ─────────────────────────────────────────────────────────────────
+  {
+    name: "Defense-in-Depth",
+    abbr: null,
+    level: "foundational",
+    def: "Layered security architecture ensuring no single control failure results in a breach. The AWS model layers: <strong>Network → Identity → Workload → Data</strong>. Ransomware spread is blocked via east-west traffic segmentation.",
+    tags: ["Architecture", "Week 3"],
+    weeks: ["week3"]
+  },
+  {
+    name: "DLP",
+    abbr: "Data Loss Prevention",
+    level: "intermediate",
+    def: "Controls and tooling that prevent <strong>unauthorized exfiltration of sensitive data</strong>. AWS Macie is the primary DLP service. Covers inline (real-time) and API (scheduled) scanning modes with GDPR Art 32 alignment.",
+    tags: ["Data Security", "PII", "Week 3"],
+    weeks: ["week3"]
+  },
+
+  // ── E ─────────────────────────────────────────────────────────────────
+  {
+    name: "ECR",
+    abbr: "Elastic Container Registry",
+    level: "intermediate",
+    def: "AWS managed container image registry with <strong>integrated vulnerability scanning</strong> via Amazon Inspector and Trivy. Supports immutable image tags to prevent tampering post-push.",
+    tags: ["Container", "Week 3"],
+    weeks: ["week3"]
+  },
+  {
+    name: "ECS / Fargate",
+    abbr: "Elastic Container Service",
+    level: "intermediate",
+    def: "AWS container orchestration service. <strong>Fargate mode</strong> provides serverless container execution with immutable runtimes and no host access — eliminating lateral movement risk from container escape attacks.",
+    tags: ["Container", "Serverless", "Week 3"],
+    weeks: ["week3"]
+  },
+  {
+    name: "EKS",
+    abbr: "Elastic Kubernetes Service",
+    level: "advanced",
+    def: "AWS managed Kubernetes service. Security hardening includes <strong>Pod Security Admission</strong>, network policies, IAM Roles for Service Accounts (IRSA), and runtime threat monitoring via GuardDuty Runtime Monitoring.",
+    tags: ["Kubernetes", "Container", "Week 3"],
+    weeks: ["week3"]
+  },
+  {
+    name: "EventBridge",
+    abbr: "Amazon EventBridge",
+    level: "intermediate",
+    def: "Serverless event bus used to build <strong>SOAR automation pipelines</strong>. Routes Security Hub findings, GuardDuty alerts, and Config violations to Lambda functions for automated remediation within seconds.",
+    tags: ["SOAR", "Automation", "Week 4"],
+    weeks: ["week4"]
+  },
+  {
+    name: "Entitlement Sprawl",
+    abbr: null,
+    level: "intermediate",
+    def: "Condition where cloud identities accumulate <strong>10× more permissions than required</strong> (Palo Alto Unit 42). Dormant credentials represent ~30% of IAM identities. The #1 cloud-native attack vector according to CyberArk 2025.",
+    tags: ["CIEM", "IAM", "Week 2"],
+    weeks: ["week2"]
+  },
+
+  // ── F ─────────────────────────────────────────────────────────────────
+  {
+    name: "False Positive",
+    abbr: null,
+    level: "foundational",
+    def: "Security alert that flags a benign activity as malicious. AWS Config findings carry a <strong>~40% false positive ratio</strong> requiring business context tuning. Macie DLP has ~15% false positive rate addressable via custom regex.",
+    tags: ["SOC Operations", "Week 1"],
+    weeks: ["week1"]
+  },
+
+  // ── G ─────────────────────────────────────────────────────────────────
+  {
+    name: "GDPR",
+    abbr: "General Data Protection Regulation",
+    level: "foundational",
+    def: "EU privacy regulation. <strong>Article 32</strong> requires technical and organizational measures proportional to data processing risk — directly driving encryption-at-rest, DLP tooling, and access controls covered in Week 3.",
+    tags: ["Compliance", "Privacy", "Week 3"],
+    weeks: ["week3"],
+    special: "standard"
+  },
+  {
+    name: "GuardDuty",
+    abbr: "Amazon GuardDuty",
+    level: "intermediate",
+    def: "AWS threat intelligence service using <strong>malware signatures + behavioral ML</strong> (99% accuracy claim). Detects crypto-mining, malware, account compromise, and anomalous API calls. Outputs structured findings to Security Hub.",
+    tags: ["Threat Detection", "ML", "Week 4"],
+    weeks: ["week4"]
+  },
+
+  // ── H ─────────────────────────────────────────────────────────────────
+  {
+    name: "HIPAA",
+    abbr: "Health Insurance Portability and Accountability Act",
+    level: "foundational",
+    def: "US healthcare privacy regulation governing <strong>Protected Health Information (PHI)</strong>. AWS Macie detects PHI in S3 buckets. AWS offers a HIPAA-eligible services program and Business Associate Agreements (BAAs).",
+    tags: ["Compliance", "Healthcare", "Week 3"],
+    weeks: ["week3"],
+    special: "standard"
+  },
+
+  // ── I ─────────────────────────────────────────────────────────────────
+  {
+    name: "IaaS / PaaS / SaaS",
+    abbr: "Cloud Service Models",
+    level: "foundational",
+    def: "<strong>IaaS</strong>: Customer manages OS, middleware, runtime, apps, data. <strong>PaaS</strong>: Customer manages runtime, apps, data. <strong>SaaS</strong>: Customer manages data, access policies, identities. Provider always secures physical infrastructure.",
+    tags: ["Architecture", "Shared Responsibility", "Week 1"],
+    weeks: ["week1"]
+  },
+  {
+    name: "IAM",
+    abbr: "Identity and Access Management",
+    level: "foundational",
+    def: "AWS service managing <strong>who can do what on which resources</strong>. Policy evaluation order: Explicit Deny > Allow > Implicit Deny. IBM CDBIR 2025: stolen credentials account for 20% of breaches. Foundation of Zero Trust.",
+    tags: ["Identity", "Zero Trust", "Week 2"],
+    weeks: ["week2"]
+  },
+  {
+    name: "IAM Policy Simulator",
+    abbr: null,
+    level: "foundational",
+    def: "AWS console tool that <strong>tests IAM policy effect</strong> without executing real API calls. Prevents ~92% of privilege escalation errors (Permiso 2025) by validating allow/deny behavior before deployment.",
+    tags: ["IAM", "Testing", "Week 2"],
+    weeks: ["week2"]
+  },
+
+  // ── J ─────────────────────────────────────────────────────────────────
+  {
+    name: "JIT",
+    abbr: "Just-In-Time Access",
+    level: "intermediate",
+    def: "Privilege access pattern granting <strong>temporary credentials with short TTLs</strong> (1–24 hours) on-demand. Eliminates standing admin privileges that have an 80% privilege escalation success rate (CrowdStrike 2025).",
+    tags: ["PAM", "Zero Trust", "Week 2"],
+    weeks: ["week2"]
+  },
+
+  // ── K ─────────────────────────────────────────────────────────────────
+  {
+    name: "KMS",
+    abbr: "AWS Key Management Service",
+    level: "foundational",
+    def: "Managed encryption key service for <strong>customer-managed keys (CMKs)</strong>. Enables automatic key rotation policies. Used to enforce encryption-at-rest for S3, EBS, RDS, and other services. Covered in Week 1 & 3.",
+    tags: ["Encryption", "Data Security", "Week 1"],
+    weeks: ["week1", "week3"]
+  },
+
+  // ── M ─────────────────────────────────────────────────────────────────
+  {
+    name: "MFA",
+    abbr: "Multi-Factor Authentication",
+    level: "foundational",
+    def: "Authentication requiring two or more verification factors. <strong>Hardware security keys</strong> (FIDO2/WebAuthn) are phishing-resistant unlike TOTP apps. Required for root account as Day 1 hardening.",
+    tags: ["IAM", "Identity", "Week 1"],
+    weeks: ["week1"]
+  },
+  {
+    name: "MITRE ATT&CK",
+    abbr: null,
+    level: "intermediate",
+    def: "Knowledge base of <strong>adversary tactics and techniques</strong> based on real-world observations. Cloud Matrix covers techniques like TA0001 (Initial Access via misconfigs) and TA0008 (Lateral Movement). Basis for detection engineering.",
+    tags: ["Threat Intelligence", "Framework", "Week 4"],
+    weeks: ["week4"],
+    special: "standard"
+  },
+  {
+    name: "MITRE D3FEND",
+    abbr: null,
+    level: "advanced",
+    def: "Complementary framework to ATT&CK providing a <strong>taxonomy of defensive techniques</strong> mapped to offensive TTPs. Used to validate detection coverage and identify gaps in security controls.",
+    tags: ["Threat Intelligence", "Framework", "Week 4"],
+    weeks: ["week4"],
+    special: "standard"
+  },
+  {
+    name: "MTTR",
+    abbr: "Mean Time To Respond",
+    level: "foundational",
+    def: "Key SOC metric measuring average time from detection to containment. <strong>Serverless SOAR automation</strong> reduces MTTR from ~4 hours manual to ~30 seconds automated (Lambda + EventBridge pattern from Week 4).",
+    tags: ["SOC Operations", "SOAR", "Week 4"],
+    weeks: ["week4"]
+  },
+
+  // ── N ─────────────────────────────────────────────────────────────────
+  {
+    name: "NACL",
+    abbr: "Network Access Control List",
+    level: "foundational",
+    def: "<strong>Stateless</strong> Layer 3/4 packet filter at the subnet boundary. Unlike Security Groups (stateful), NACLs require explicit inbound AND outbound rules. Used for coarse-grained network segmentation in VPC architecture.",
+    tags: ["Network", "VPC", "Week 3"],
+    weeks: ["week3"]
+  },
+  {
+    name: "NIST 800-53",
+    abbr: null,
+    level: "intermediate",
+    def: "NIST Special Publication providing <strong>security and privacy controls</strong> catalog for federal systems. AU-2 covers audit event selection. AC-2 covers account management. Widely adopted as enterprise security baseline.",
+    tags: ["Standard", "Compliance", "Framework"],
+    weeks: ["week1", "week2"],
+    special: "standard"
+  },
+  {
+    name: "NIST 800-61",
+    abbr: null,
+    level: "intermediate",
+    def: "NIST Computer Security Incident Handling Guide defining the <strong>IR lifecycle</strong>: Preparation → Detection → Analysis → Containment → Eradication → Recovery → Post-Incident. Basis for SOAR playbook design.",
+    tags: ["Incident Response", "Framework", "Week 4"],
+    weeks: ["week4"],
+    special: "standard"
+  },
+
+  // ── O ─────────────────────────────────────────────────────────────────
+  {
+    name: "OU",
+    abbr: "Organizational Unit",
+    level: "foundational",
+    def: "Logical container within AWS Organizations for <strong>grouping accounts</strong>. SCPs attached to an OU apply to all accounts within it. Enables hierarchical governance: Root → OU → Account → Role.",
+    tags: ["Governance", "SCP", "Week 1"],
+    weeks: ["week1"]
+  },
+
+  // ── P ─────────────────────────────────────────────────────────────────
+  {
+    name: "PAW",
+    abbr: "Privileged Access Workstation",
+    level: "intermediate",
+    def: "Dedicated hardened endpoint used exclusively for <strong>administrative tasks</strong>. Isolates privileged operations from general-purpose computing to prevent credential theft. Paired with JIT and Session Manager for zero standing admin.",
+    tags: ["PAM", "Zero Trust", "Week 2"],
+    weeks: ["week2"]
+  },
+  {
+    name: "PCI DSS",
+    abbr: "Payment Card Industry Data Security Standard",
+    level: "foundational",
+    def: "Compliance standard for organizations processing card payments. <strong>PCI DSS 4.0</strong> adds cloud-native requirements including Req 6.4.3 mandating IaC scanning. AWS provides PCI DSS compliance reports via Artifact.",
+    tags: ["Compliance", "Standard", "Week 1"],
+    weeks: ["week1"],
+    special: "standard"
+  },
+  {
+    name: "PII",
+    abbr: "Personally Identifiable Information",
+    level: "foundational",
+    def: "Data that can identify an individual — SSNs, credit card numbers, passport data, email addresses. <strong>AWS Macie</strong> uses ML to detect PII in S3. GDPR mandates proportional technical controls for PII processing.",
+    tags: ["Data Security", "DLP", "GDPR", "Week 3"],
+    weeks: ["week3"]
+  },
+  {
+    name: "Policy-as-Code",
+    abbr: "PaC",
+    level: "intermediate",
+    def: "Practice of expressing security and governance policies as <strong>machine-readable code</strong> that can be versioned, tested, and automatically enforced. Includes SCPs, IaC scanning (Checkov), and OPA/Rego policies.",
+    tags: ["DevSecOps", "Governance", "Week 2"],
+    weeks: ["week1", "week2"]
+  },
+
+  // ── R ─────────────────────────────────────────────────────────────────
+  {
+    name: "Root Account",
+    abbr: "AWS Root User",
+    level: "foundational",
+    def: "The <strong>super-admin identity</strong> created with an AWS account with unrestricted access to all services. Best practice: enable hardware MFA, disable access keys, use only for tasks requiring root (closing the account, changing support plan).",
+    tags: ["IAM", "Account Security", "Week 1"],
+    weeks: ["week1"]
+  },
+
+  // ── S ─────────────────────────────────────────────────────────────────
+  {
+    name: "S3",
+    abbr: "Simple Storage Service",
+    level: "foundational",
+    def: "AWS object storage service. <strong>S3.1 public bucket rule</strong> is the first Config rule activated in the program. Misconfigured public S3 buckets are among the most common cloud data breach vectors.",
+    tags: ["Storage", "Misconfiguration", "Week 1"],
+    weeks: ["week1"]
+  },
+  {
+    name: "SCP",
+    abbr: "Service Control Policy",
+    level: "foundational",
+    def: "<strong>Organizational guardrails</strong> applied via AWS Organizations that define maximum permissions (not grants). Evaluation: Explicit Deny > Allow > Implicit Deny. Common pattern: 'Deny public S3 buckets' applied at the OU level.",
+    tags: ["Governance", "Organizations", "Week 1"],
+    weeks: ["week1"]
+  },
+  {
+    name: "Security Group",
+    abbr: "SG",
+    level: "foundational",
+    def: "<strong>Stateful Layer 7 virtual firewall</strong> for EC2 instances and other resources. Unlike NACLs, Security Groups track connection state — return traffic is automatically allowed. Attached at the ENI level.",
+    tags: ["Network", "VPC", "Week 3"],
+    weeks: ["week3"]
+  },
+  {
+    name: "Security Hub",
+    abbr: "AWS Security Hub",
+    level: "intermediate",
+    def: "CSPM aggregation service integrating <strong>15+ native AWS security services</strong>. Normalizes findings into a 0-100 Security Score. Supports CIS AWS Foundations, PCI DSS, and NIST 800-53 standards as enabled benchmarks.",
+    tags: ["CSPM", "CNAPP", "Compliance", "Week 1"],
+    weeks: ["week1", "week4"]
+  },
+  {
+    name: "Session Manager",
+    abbr: "AWS Systems Manager Session Manager",
+    level: "intermediate",
+    def: "Secure shell access to EC2 instances <strong>without SSH keys or open inbound ports</strong>. All session activity is logged to CloudTrail and CloudWatch. Core enabler of zero standing admin via JIT + PAW architecture.",
+    tags: ["PAM", "Zero Trust", "Audit", "Week 2"],
+    weeks: ["week2"]
+  },
+  {
+    name: "Shared Responsibility Model",
+    abbr: null,
+    level: "foundational",
+    def: "AWS framework defining <strong>security 'of' the cloud (AWS) vs 'in' the cloud (customer)</strong>. 2025 Verizon DBIR: 62% of cloud breaches stem from customer-side misconfigurations. Understanding boundaries prevents $4.45M breach scope confusion.",
+    tags: ["Architecture", "Governance", "Week 1"],
+    weeks: ["week1"]
+  },
+  {
+    name: "SIEM",
+    abbr: "Security Information and Event Management",
+    level: "intermediate",
+    def: "Platform aggregating logs for <strong>threat detection, analysis, and compliance reporting</strong>. AWS native SIEM pattern: CloudTrail → CloudWatch Logs Insights → GuardDuty. Elite SOC benchmark: mean-time-to-detect under 15 minutes.",
+    tags: ["SOC", "Logging", "Week 4"],
+    weeks: ["week4"]
+  },
+  {
+    name: "SOAR",
+    abbr: "Security Orchestration, Automation, and Response",
+    level: "intermediate",
+    def: "Automated incident response workflows reducing MTTR by ~80%. AWS serverless SOAR pattern: <strong>EventBridge → Lambda → Step Functions</strong>. Example: S3 public bucket auto-remediation + Slack notification within 30 seconds.",
+    tags: ["Automation", "IR", "Week 4"],
+    weeks: ["week4"]
+  },
+  {
+    name: "SOC 2",
+    abbr: "System and Organization Controls 2",
+    level: "foundational",
+    def: "AICPA attestation standard with <strong>5 Trust Services Criteria</strong>: Security, Availability, Processing Integrity, Confidentiality, Privacy. SOC 2 Type II covers operational effectiveness over time. First-pass = customer trust = revenue.",
+    tags: ["Compliance", "Audit", "Week 1"],
+    weeks: ["week1"],
+    special: "standard"
+  },
+  {
+    name: "STRIDE",
+    abbr: "Spoofing, Tampering, Repudiation, Info Disclosure, DoS, Elevation",
+    level: "advanced",
+    def: "Threat modeling framework cataloging threat categories against a system design. Applied to VPC + workload architectures in Week 4 to systematically identify mitigations. Basis for OWASP threat modeling guidance.",
+    tags: ["Threat Modeling", "Architecture", "Week 4"],
+    weeks: ["week4"]
+  },
+
+  // ── T ─────────────────────────────────────────────────────────────────
+  {
+    name: "Transit Gateway",
+    abbr: "AWS TGW",
+    level: "advanced",
+    def: "Central hub for <strong>connecting 100+ VPCs and on-premises networks</strong>. Enables hub-spoke topology that simplifies security group management and supports centralized inspection. Required because VPC peering is non-transitive.",
+    tags: ["Network", "VPC", "Week 3"],
+    weeks: ["week3"]
+  },
+
+  // ── V ─────────────────────────────────────────────────────────────────
+  {
+    name: "VPC",
+    abbr: "Virtual Private Cloud",
+    level: "foundational",
+    def: "Isolated <strong>virtual network</strong> within AWS. Security hardening uses 3-tier architecture: public (ALB), private (app servers), and isolated (database) subnets with Security Groups and NACLs providing layered filtering.",
+    tags: ["Network", "Architecture", "Week 3"],
+    weeks: ["week3"]
+  },
+
+  // ── W ─────────────────────────────────────────────────────────────────
+  {
+    name: "Well-Architected Framework",
+    abbr: "WAF",
+    level: "foundational",
+    def: "AWS best-practice framework with 6 pillars. The <strong>Security Pillar</strong> defines the responsibility matrix used in Day 1, covering identity, detection, infrastructure protection, data protection, and incident response.",
+    tags: ["Architecture", "Framework", "Week 1"],
+    weeks: ["week1"]
+  },
+
+  // ── Z ─────────────────────────────────────────────────────────────────
+  {
+    name: "Zero Trust",
+    abbr: null,
+    level: "intermediate",
+    def: "Security model based on <strong>'never trust, always verify, assume breach'</strong> (Forrester ZTX). Eliminates implicit trust by requiring continuous verification of identity, device health, and context for every access request.",
+    tags: ["Architecture", "IAM", "Week 2"],
+    weeks: ["week2"]
+  },
+];
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
+
+let currentFilter = 'all';
+let currentLetter = null;
+let searchQuery    = '';
+
+function updateTotalCount() {
+  document.getElementById('total-count').textContent = TERMS.length;
+}
+
+function buildAlphaIndex() {
+  const letters = [...new Set(TERMS.map(t => t.name[0].toUpperCase()))].sort();
+  const el = document.getElementById('alpha-index');
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(ch => {
+    const btn = document.createElement('button');
+    btn.className = 'alpha-btn' + (letters.includes(ch) ? ' has-terms' : '');
+    btn.textContent = ch;
+    btn.dataset.letter = ch;
+    btn.addEventListener('click', () => {
+      if (currentLetter === ch) { currentLetter = null; btn.classList.remove('active'); }
+      else {
+        document.querySelectorAll('.alpha-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentLetter = ch;
+      }
+      render();
+    });
+    el.appendChild(btn);
+  });
+}
+
+function render() {
+  const main = document.getElementById('main');
+  const noRes = document.getElementById('no-results');
+
+  let visible = TERMS.filter(t => {
+    const matchFilter = currentFilter === 'all' || t.level === currentFilter;
+    const matchLetter = !currentLetter || t.name[0].toUpperCase() === currentLetter;
+    const q = searchQuery.toLowerCase();
+    const matchSearch = !q || t.name.toLowerCase().includes(q) ||
+      (t.abbr && t.abbr.toLowerCase().includes(q)) ||
+      t.def.toLowerCase().replace(/<[^>]+>/g,'').includes(q) ||
+      t.tags.some(tag => tag.toLowerCase().includes(q));
+    return matchFilter && matchLetter && matchSearch;
+  });
+
+  document.getElementById('count-badge').textContent =
+    visible.length + ' of ' + TERMS.length + ' terms';
+
+  // Group by first letter
+  const groups = {};
+  visible.forEach(t => {
+    const ch = t.name[0].toUpperCase();
+    if (!groups[ch]) groups[ch] = [];
+    groups[ch].push(t);
+  });
+
+  // Clear old sections (keep no-results)
+  Array.from(main.querySelectorAll('.letter-section')).forEach(el => el.remove());
+
+  if (visible.length === 0) {
+    noRes.style.display = 'block';
+    return;
+  }
+  noRes.style.display = 'none';
+
+  Object.keys(groups).sort().forEach(letter => {
+    const section = document.createElement('section');
+    section.className = 'letter-section';
+    section.id = 'letter-' + letter;
+
+    section.innerHTML = `
+      <div class="letter-heading">
+        <h2>${letter}</h2>
+        <hr/>
+      </div>
+      <div class="terms-grid"></div>
+    `;
+
+    const grid = section.querySelector('.terms-grid');
+    groups[letter].forEach(term => {
+      const card = document.createElement('div');
+      card.className = 'term-card';
+      const levelLabel = term.level.charAt(0).toUpperCase() + term.level.slice(1);
+      const tags = term.tags.map(tag => {
+        const cls = tag.startsWith('Week') ? 'week' : (term.special === 'standard' ? 'standard' : '');
+        return `<span class="tag ${cls}">${tag}</span>`;
+      }).join('');
+      card.innerHTML = `
+        <div class="term-header">
+          <div>
+            <div class="term-name">${term.name}</div>
+            ${term.abbr ? `<div class="term-abbr">${term.abbr}</div>` : ''}
+          </div>
+          <span class="term-level level-${term.level}">${levelLabel}</span>
+        </div>
+        <p class="term-def">${term.def}</p>
+        <div class="term-footer">${tags}</div>
+      `;
+      grid.appendChild(card);
+    });
+
+    main.insertBefore(section, noRes);
+  });
+}
+
+// ── EVENTS ───────────────────────────────────────────────────────────────────
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    render();
+  });
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  searchQuery = e.target.value;
+  if (searchQuery) {
+    currentLetter = null;
+    document.querySelectorAll('.alpha-btn').forEach(b => b.classList.remove('active'));
+  }
+  render();
+});
+
+updateTotalCount();
+buildAlphaIndex();
+render();
+</script>
+</body>
+</html>
