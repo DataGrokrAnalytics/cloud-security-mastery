@@ -49,14 +49,14 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .back-index{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-decoration:none;padding:6px 10px;border-radius:5px;border:1px solid var(--border-hi);transition:all .15s;background:transparent}
 .back-index:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-dim)}
 .back-index svg{flex-shrink:0;opacity:.6}
+.week-jumps-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:1px}
 .week-jumps{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}
-.week-jump{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;padding:3px 9px;border-radius:3px;border:1px solid var(--border-hi);color:var(--muted);text-decoration:none;transition:all .12s;background:transparent;cursor:pointer}
-.week-jump:hover{color:var(--text);border-color:var(--border-hi);background:rgba(255,255,255,.04)}
+.week-jump{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;padding:3px 9px;border-radius:3px;border:1px solid var(--border-hi);color:var(--muted);text-decoration:none;transition:all .12s;background:transparent}
+.week-jump:hover{color:var(--text);background:rgba(255,255,255,.04)}
 .week-jump.wj1{color:#4af0c4;border-color:rgba(74,240,196,.3)}
 .week-jump.wj2{color:#8a7fff;border-color:rgba(138,127,255,.3)}
 .week-jump.wj3{color:#f0924a;border-color:rgba(240,146,74,.3)}
 .week-jump.wj4{color:#f05a5a;border-color:rgba(240,90,90,.3)}
-.week-jumps-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:1px}
 
 /* ── Day nav strip ── */
 .day-nav-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:8px;margin-bottom:2px}
@@ -198,6 +198,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
       <span class="chip">~4h</span>
     </div>
   </div>
+
+
+
   <div class="sidebar-back">
     <a class="back-index" href="../index.html">
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -205,22 +208,24 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     </a>
     <div class="week-jumps-label">Jump to week</div>
     <div class="week-jumps">
-      <a class="week-jump wj1" href="../index.html#week-1" onclick="sessionStorage.setItem('openWeek','1')">W1</a>
-      <a class="week-jump" href="../index.html#week-2" onclick="sessionStorage.setItem('openWeek','2')">W2</a>
-      <a class="week-jump" href="../index.html#week-3" onclick="sessionStorage.setItem('openWeek','3')">W3</a>
-      <a class="week-jump" href="../index.html#week-4" onclick="sessionStorage.setItem('openWeek','4')">W4</a>
+      <a class="week-jump wj1" href="../index.html#week-1">W1</a>
+      <a class="week-jump wj2" href="../index.html#week-2">W2</a>
+      <a class="week-jump wj3" href="../index.html#week-3">W3</a>
+      <a class="week-jump wj4" href="../index.html#week-4">W4</a>
     </div>
     <div class="day-nav-label">Week 1 days</div>
     <div class="day-nav">
-      <a class="day-link" href="day-01.html">D1</a>
+      <a class="day-link " href="day-01.html">D1</a>
       <a class="day-link" href="day-02.html">D2</a>
       <a class="day-link current" href="day-03.html">D3</a>
       <a class="day-link" href="day-04.html">D4</a>
-      <a class="day-link" href="day-05.html">D5</a>
+      <a class="day-link " href="day-05.html">D5</a>
       <a class="day-link" href="day-06.html">D6</a>
       <a class="day-link" href="day-07.html">D7</a>
     </div>
   </div>
+
+
   <div class="lesson-nav">
     <div class="nav-group-label">Lessons</div>
     <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">What Is Security Hub?</span><span class="nav-check">✓</span></div>

@@ -51,6 +51,31 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
 .progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
 
+
+/* ── Sidebar back navigation ── */
+.sidebar-back{padding:14px 24px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.back-index{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-decoration:none;padding:6px 10px;border-radius:5px;border:1px solid var(--border-hi);transition:all .15s;background:transparent}
+.back-index:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-dim)}
+.back-index svg{flex-shrink:0;opacity:.6}
+.week-jumps-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:1px}
+.week-jumps{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}
+.week-jump{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;padding:3px 9px;border-radius:3px;border:1px solid var(--border-hi);color:var(--muted);text-decoration:none;transition:all .12s;background:transparent}
+.week-jump:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.week-jump.wj1{color:#4af0c4;border-color:rgba(74,240,196,.3)}
+.week-jump.wj2{color:#8a7fff;border-color:rgba(138,127,255,.3)}
+.week-jump.wj3{color:#f0924a;border-color:rgba(240,146,74,.3)}
+.week-jump.wj4{color:#f05a5a;border-color:rgba(240,90,90,.3)}
+
+/* ── Day nav strip ── */
+.day-nav-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:8px;margin-bottom:2px}
+.day-nav{display:flex;gap:4px;flex-wrap:wrap}
+.day-link{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:3px 7px;border-radius:3px;border:1px solid var(--border-hi);color:var(--muted);text-decoration:none;transition:all .12s;background:transparent}
+.day-link:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.day-link.current{color:var(--accent);border-color:rgba(74,240,196,.4);background:rgba(74,240,196,.06);font-weight:600}
+
+
+
+
 /* ── Topbar ── */
 .main{display:flex;flex-direction:column}
 .lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
@@ -225,6 +250,32 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
       <span class="chip">~4h</span>
     </div>
   </div>
+
+  <div class="sidebar-back">
+    <a class="back-index" href="../index.html">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Course Index
+    </a>
+    <div class="week-jumps-label">Jump to week</div>
+    <div class="week-jumps">
+      <a class="week-jump wj1" href="../index.html#week-1">W1</a>
+      <a class="week-jump wj2" href="../index.html#week-2">W2</a>
+      <a class="week-jump wj3" href="../index.html#week-3">W3</a>
+      <a class="week-jump wj4" href="../index.html#week-4">W4</a>
+    </div>
+    <div class="day-nav-label">Week 2 days</div>
+    <div class="day-nav">
+      <a class="day-link " href="day-08.html">D8</a>
+      <a class="day-link " href="day-09.html">D9</a>
+      <a class="day-link " href="day-10.html">D10</a>
+      <a class="day-link " href="day-11.html">D11</a>
+      <a class="day-link " href="day-12.html">D12</a>
+      <a class="day-link" href="day-13.html">D13</a>
+      <a class="day-link current" href="day-14.html">D14</a>
+   
+    </div>
+  </div>
+
   <div class="lesson-nav">
     <div class="nav-group-label">Lessons</div>
     <div class="nav-item active" onclick="goTo(0)">
@@ -704,24 +755,24 @@ git push</pre>
     </div>
   </div>
 
-  <!-- ══ COMPLETION ══ -->
+  <!-- COMPLETION -->
   <div class="lesson-pane" id="pane-complete">
     <div class="completion-card">
-      <span class="completion-icon">🗂️</span>
-      <h1>Week 2 Complete</h1>
+      <span class="completion-icon">🎉</span>
+      <h1>Week 2 Complete!</h1>
       <p>You have consolidated Zero Trust, CIEM, JIT, IaC scanning, and privileged access into a CISO-ready IAM audit portfolio. Week 3 begins with VPC Network Foundation.</p>
-      <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
+      <div class="score-pill"><span>⚡</span> Assessment: <span id="score-val">—</span></div><br>
       <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> checklist items</div>
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+      <p style="font-size:13px;color:var(--accent);margin-bottom:24px;font-family:'IBM Plex Mono',monospace"></p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
         <button class="prev-btn" onclick="goTo(0);resetAll()">↩ Review</button>
-        <a href="../../index.html" style="text-decoration:none"><button class="next-btn" style="background:var(--pill);color:var(--muted);border:1px solid var(--border-hi)">← Course Index</button></a>
-        <a href="../../week-3/lessons/day-15.html"><button class="next-btn lab-btn">Week 3 →</button></a>
+        <a href="../index.html" style="text-decoration:none"><button class="next-btn" style="background:var(--pill);color:var(--muted);border:1px solid var(--border-hi)">← Course Index</button></a>
+        <a href="day-15.html" style="text-decoration:none"><button class="next-btn week2">Week 3: VPC Network Foundation →</button></a>
       </div>
     </div>
   </div>
-
-</div><!-- /main -->
-</div><!-- /shell -->
+</div>
+</div>
 
 <script>
 const STORAGE_KEY = 'csm-day14';
