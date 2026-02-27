@@ -32,6 +32,31 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
 .progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
 .progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
+
+/* ── Sidebar back navigation ── */
+.sidebar-back{padding:14px 24px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.back-index{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-decoration:none;padding:6px 10px;border-radius:5px;border:1px solid var(--border-hi);transition:all .15s;background:transparent}
+.back-index:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-dim)}
+.back-index svg{flex-shrink:0;opacity:.6}
+.week-jumps-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:1px}
+.week-jumps{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}
+.week-jump{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;padding:3px 9px;border-radius:3px;border:1px solid var(--border-hi);color:var(--muted);text-decoration:none;transition:all .12s;background:transparent}
+.week-jump:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.week-jump.wj1{color:#4af0c4;border-color:rgba(74,240,196,.3)}
+.week-jump.wj2{color:#8a7fff;border-color:rgba(138,127,255,.3)}
+.week-jump.wj3{color:#f0924a;border-color:rgba(240,146,74,.3)}
+.week-jump.wj4{color:#f05a5a;border-color:rgba(240,90,90,.3)}
+
+/* ── Day nav strip ── */
+.day-nav-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:8px;margin-bottom:2px}
+.day-nav{display:flex;gap:4px;flex-wrap:wrap}
+.day-link{font-family:'IBM Plex Mono',monospace;font-size:9px;padding:3px 7px;border-radius:3px;border:1px solid var(--border-hi);color:var(--muted);text-decoration:none;transition:all .12s;background:transparent}
+.day-link:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.day-link.current{color:var(--accent);border-color:rgba(74,240,196,.4);background:rgba(74,240,196,.06);font-weight:600}
+
+
+
+
 .main{display:flex;flex-direction:column}
 .lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
 .lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
@@ -64,7 +89,23 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .recap-bullets{font-size:12.5px;color:#6a7490;line-height:1.7;padding-left:14px}
 .recap-bullets li{margin-bottom:2px}
 /* Architecture diagram */
-.arch-diagram{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:28px 32px;margin:24px 0;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:2.1;color:#6a7490;overflow-x:auto}
+.arch-diagram {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin: 24px 0;
+  overflow-x: auto;
+}
+.arch-diagram pre {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.55;
+  margin: 0;
+  padding: 0;
+  color: #6a7490;
+  white-space: pre;
+}
 /* Mastery quiz — same kcheck but multi-section */
 .quiz-section-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:32px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
 .kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:20px 0 16px}
@@ -134,6 +175,31 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <h2>Week 3 Protection<br>Portfolio</h2>
     <div class="sidebar-meta"><span class="chip">Capstone</span><span class="chip">Portfolio</span><span class="chip">4 sections</span><span class="chip">1 lab</span></div>
   </div>
+
+<div class="sidebar-back">
+    <a class="back-index" href="../index.html">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Course Index
+    </a>
+    <div class="week-jumps-label">Jump to week</div>
+    <div class="week-jumps">
+      <a class="week-jump wj1" href="../index.html#week-1">W1</a>
+      <a class="week-jump wj2" href="../index.html#week-2">W2</a>
+      <a class="week-jump wj3" href="../index.html#week-3">W3</a>
+      <a class="week-jump wj4" href="../index.html#week-4">W4</a>
+    </div>
+    <div class="day-nav-label">Week 3 days</div>
+    <div class="day-nav">
+      <a class="day-link " href="day-15.html">D15</a>
+      <a class="day-link" href="day-16.html">D16</a>
+      <a class="day-link" href="day-17.html">D17</a>
+      <a class="day-link" href="day-18.html">D18</a>
+      <a class="day-link" href="day-19.html">D19</a>
+      <a class="day-link " href="day-20.html">D20</a>
+      <a class="day-link current" href="day-21.html">D21</a>
+    </div>
+  </div>
+
   <div class="lesson-nav">
     <div class="nav-group-label">Review</div>
     <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">Week 3 Recap: 7 Days of Protection</span><span class="nav-check">✓</span></div>
@@ -231,39 +297,39 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <div class="lesson-nav-footer"><button class="prev-btn" disabled>← Previous</button><button class="next-btn" onclick="next()">Next →</button></div>
   </div>
 
-  <!-- SECTION 2: ARCHITECTURE DIAGRAM -->
+<!-- SECTION 2: ARCHITECTURE DIAGRAM -->
   <div class="lesson-pane" id="pane-1">
     <div class="lesson-tag tag-security">Architecture</div>
     <h1>Week 3<br><em>Architecture Diagram</em></h1>
     <p>This is the end-state architecture you've built across the week. Use this as the basis for your portfolio diagram — recreate it in draw.io, Lucidchart, or as an ASCII art diagram in your README. Every layer here is something you actually built and can prove.</p>
-    <div class="arch-diagram">
-<span style="color:var(--muted);font-size:11px">┌─────────────────────────────────────────────────────────────┐</span>
-<span style="color:var(--muted);font-size:11px">│</span>  <span style="color:var(--w3)">AWS Account</span>  <span style="color:var(--muted);font-size:11px">│  Inspector (D18) · Macie (D17) · Security Hub        │</span>
-<span style="color:var(--muted);font-size:11px">├─────────────────────────────────────────────────────────────┤</span>
-<span style="color:var(--muted)">│</span>  <span style="color:#f0924a">VPC 10.0.0.0/16</span>  <span style="color:var(--muted)">── Transit Gateway (multi-VPC)              │</span>
-<span style="color:var(--muted)">│</span>                                                             <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:#f0924a">Public Subnet .1.0/24</span>  <span style="color:var(--muted)">→ IGW</span>                            <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">┌──────────────┐</span>  <span style="color:var(--muted)">NACL: deny bad IPs</span>                      <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">│</span> <span style="color:#e4eaf6">ALB  sg-alb</span>  <span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">443 from 0.0.0.0/0</span>                      <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">└──────┬───────┘</span>                                          <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>         <span style="color:var(--muted)">│ 8080</span>                                              <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--w3)">App Subnet .2.0/24</span>  <span style="color:var(--muted)">→ NAT GW (outbound only)</span>            <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">┌──────────────────────┐</span>   <span style="color:var(--muted)">┌──────────────────┐</span>  <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">│</span> <span style="color:#e4eaf6">ECS/Fargate sg-app</span>   <span style="color:var(--muted)">│</span>   <span style="color:var(--muted)">│</span> <span style="color:#e4eaf6">Lambda  sg-app</span>   <span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">│</span> <span style="color:var(--muted)">non-root · RO FS</span>      <span style="color:var(--muted)">│</span>   <span style="color:var(--muted)">│</span> <span style="color:var(--muted)">least-priv role</span>  <span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">│</span> <span style="color:var(--muted)">Task Role (IRSA)</span>      <span style="color:var(--muted)">│</span>   <span style="color:var(--muted)">│</span> <span style="color:var(--muted)">Secrets Mgr ref</span>  <span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">└──────────┬───────────┘</span>   <span style="color:var(--muted)">└────────┬─────────┘</span>  <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>             <span style="color:var(--muted)">│ 5432</span>                    <span style="color:var(--muted)">│</span>                   <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--violet)">DB Subnet .3.0/24</span>  <span style="color:var(--muted)">── NACL: allow .2.0 only ──────────</span>   <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">┌──────────────┐</span>                                          <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">│</span> <span style="color:#e4eaf6">RDS  sg-db</span>   <span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">Encrypted: KMS CMK (D16)</span>               <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--muted)">└──────────────┘</span>                                          <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>                                                             <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--w3)">S3 Buckets</span>  <span style="color:var(--muted)">SSE-KMS CMK · enforce policy · Macie scan</span>   <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--w3)">ECR</span>         <span style="color:var(--muted)">Immutable tags · Enhanced scanning (D19)</span>      <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted)">│</span>  <span style="color:var(--w3)">Secrets Mgr</span> <span style="color:var(--muted)">Runtime secret fetch · auto-rotation</span>          <span style="color:var(--muted)">│</span>
-<span style="color:var(--muted);font-size:11px">└─────────────────────────────────────────────────────────────┘</span>
-    </div>
+    <div class="arch-diagram"><pre>
+<span style="color:var(--muted)">┌─────────────────────────────────────────────────────────────┐</span>
+<span style="color:var(--muted)">│  </span><span style="color:var(--w3)">AWS Account</span><span style="color:var(--muted)">  │  Inspector (D18) · Macie (D17) · Security Hub  │</span>
+<span style="color:var(--muted)">├─────────────────────────────────────────────────────────────┤</span>
+<span style="color:var(--muted)">│  </span><span style="color:#f0924a">VPC 10.0.0.0/16</span><span style="color:var(--muted)">  ── Transit Gateway (multi-VPC)             │</span>
+<span style="color:var(--muted)">│                                                             │</span>
+<span style="color:var(--muted)">│  </span><span style="color:#f0924a">Public Subnet .1.0/24</span><span style="color:var(--muted)">  → IGW                             │</span>
+<span style="color:var(--muted)">│  ┌──────────────┐  NACL: deny bad IPs                      │</span>
+<span style="color:var(--muted)">│  │ </span><span style="color:#e4eaf6">ALB  sg-alb</span><span style="color:var(--muted)">  │  443 from 0.0.0.0/0                      │</span>
+<span style="color:var(--muted)">│  └──────┬───────┘                                          │</span>
+<span style="color:var(--muted)">│         │ 8080                                             │</span>
+<span style="color:var(--muted)">│  </span><span style="color:var(--w3)">App Subnet .2.0/24</span><span style="color:var(--muted)">  → NAT GW (outbound only)            │</span>
+<span style="color:var(--muted)">│  ┌──────────────────────┐   ┌──────────────────┐          │</span>
+<span style="color:var(--muted)">│  │ </span><span style="color:#e4eaf6">ECS/Fargate sg-app</span><span style="color:var(--muted)">   │   │ </span><span style="color:#e4eaf6">Lambda  sg-app</span><span style="color:var(--muted)">   │          │</span>
+<span style="color:var(--muted)">│  │ non-root · RO FS      │   │ least-priv role  │          │</span>
+<span style="color:var(--muted)">│  │ Task Role (IRSA)      │   │ Secrets Mgr ref  │          │</span>
+<span style="color:var(--muted)">│  └──────────┬───────────┘   └────────┬─────────┘          │</span>
+<span style="color:var(--muted)">│             │ 5432                   │                     │</span>
+<span style="color:var(--muted)">│  </span><span style="color:var(--violet)">DB Subnet .3.0/24</span><span style="color:var(--muted)">  ── NACL: allow .2.0 only ─────────────│</span>
+<span style="color:var(--muted)">│  ┌──────────────┐                                          │</span>
+<span style="color:var(--muted)">│  │ </span><span style="color:#e4eaf6">RDS  sg-db</span><span style="color:var(--muted)">   │  Encrypted: KMS CMK (D16)                │</span>
+<span style="color:var(--muted)">│  └──────────────┘                                          │</span>
+<span style="color:var(--muted)">│                                                             │</span>
+<span style="color:var(--muted)">│  </span><span style="color:var(--w3)">S3 Buckets</span><span style="color:var(--muted)">  SSE-KMS CMK · enforce policy · Macie scan   │</span>
+<span style="color:var(--muted)">│  </span><span style="color:var(--w3)">ECR</span><span style="color:var(--muted)">         Immutable tags · Enhanced scanning (D19)      │</span>
+<span style="color:var(--muted)">│  </span><span style="color:var(--w3)">Secrets Mgr</span><span style="color:var(--muted)"> Runtime secret fetch · auto-rotation          │</span>
+<span style="color:var(--muted)">└─────────────────────────────────────────────────────────────┘</span>
+</pre></div>
     <div class="callout tip">
       <div class="callout-title">✓ Portfolio Diagram Tip</div>
       For your GitHub portfolio, export this architecture as a proper diagram using <strong>draw.io</strong> (free, no account required at app.diagrams.net). Use colour-coding that matches the Week 3 teal theme. Add annotations for each control layer. Label every security boundary — reviewers and interviewers want to see that you understand why each layer exists, not just that it exists.
@@ -542,8 +608,7 @@ git log --oneline -7  <span class="comment"># verify all 7 days visible in histo
     <div class="lesson-nav-footer"><button class="prev-btn" onclick="prev()">← Previous</button><button class="next-btn lab-btn" onclick="finish()">Complete Week 3 ✓</button></div>
   </div>
 
-  <!-- WEEK COMPLETE -->
-  <div class="lesson-pane" id="pane-complete">
+<div class="lesson-pane" id="pane-complete">
     <div class="completion-card">
       <span class="completion-icon">🏆</span>
       <h1>Week 3 Complete</h1>
@@ -558,13 +623,11 @@ git log --oneline -7  <span class="comment"># verify all 7 days visible in histo
       <div class="score-pill"><span>⚡</span> Mastery Quiz: <span id="score-val">—</span></div><br>
       <div class="lab-score-pill"><span>🔬</span> Portfolio: <span id="lab-score-val">—</span> / 9 complete</div>
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-        <a href="../../index.html" style="text-decoration:none"><button class="prev-btn">← Course Index</button></a>
-        <a href="../../week-4/lessons/day-22.html" style="text-decoration:none"><button class="next-btn">Week 4: Detection & Operations →</button></a>
+        <a href="index.html" style="text-decoration:none"><button class="prev-btn">← Course Index</button></a>
+        <a href="day-22.html" style="text-decoration:none"><button class="next-btn">Week 4: Detection & Operations →</button></a>
       </div>
     </div>
   </div>
-</div>
-</div>
 <script>
 const STORAGE_KEY='csm-day21';const TOTAL=5;
 const titles=['Week 3 Recap: 7 Days of Protection','Week 3 Architecture Diagram','Mastery Quiz — All 7 Days','Week 3 Cleanup Checklist','Portfolio Lab: GitHub Commit & Executive Summary'];
