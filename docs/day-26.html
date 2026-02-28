@@ -6,122 +6,7 @@
 <title>Day 26 — Lambda SOAR: Automated Incident Response</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#f05a5a;--accent-dim:rgba(240,90,90,.08);--amber:#f0924a;--violet:#8a7fff;--danger:#f05a5a;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w4:#f05a5a;}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
-.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
-.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
-.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
-.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w4);margin-bottom:6px}
-.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
-.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
-.lesson-nav{padding:16px 0;flex:1}
-.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
-.nav-item:hover{background:rgba(255,255,255,.03)}
-.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
-.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
-.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
-.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
-.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
-.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
-.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
-.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
-.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
-.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
-.main{display:flex;flex-direction:column}
-.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
-.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
-.nav-arrows{display:flex;gap:8px}
-.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
-.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
-.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
-.lesson-pane.active{display:flex}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
-.tag-concept{color:var(--violet)}.tag-warning{color:var(--amber)}.tag-security{color:var(--accent)}.tag-lab{color:var(--lab)}.tag-arch{color:#4ab8d4}.tag-detect{color:var(--w4)}
-.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
-.lesson-pane h1 em{font-style:italic;color:var(--accent)}.lab-pane h1 em{color:var(--lab)}
-.lesson-pane h2{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;color:#e4eaf6;margin:32px 0 14px}
-.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
-.lesson-pane strong{color:#e0e6f0;font-weight:500}
-.lesson-pane ul,ol{padding-left:20px;margin-bottom:18px;color:#a0a8bc;line-height:1.9}
-.lesson-pane li{margin-bottom:4px}
-.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
-.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
-.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
-.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
-.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
-.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
-.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
-.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
-.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
-.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
-.styled-table tr:hover td{background:rgba(255,255,255,.02)}
-.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--w4)}
-.flow-diagram{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:24px 28px;margin:24px 0;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:2.4;color:#6a7490}
-.flow-diagram .node{color:#e4eaf6}.flow-diagram .arrow{color:var(--faint)}.flow-diagram .action{color:var(--lab)}
-.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
-.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
-.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
-.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
-.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
-.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
-.code-block pre .hl{color:var(--w4)}.code-block pre .hl2{color:var(--amber)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}.code-block pre .kw{color:var(--violet)}
-.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
-.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--w4);margin-bottom:14px}
-.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
-.kcheck-options{display:flex;flex-direction:column;gap:10px}
-.kcheck-opt{background:var(--surface2);border:1px solid var(--border-hi);border-radius:7px;padding:12px 16px;cursor:pointer;font-size:13.5px;color:#9aa3ba;line-height:1.5;text-align:left;transition:all .15s}
-.kcheck-opt:hover:not(.disabled){border-color:var(--w4);color:var(--text);background:rgba(240,90,90,.06)}
-.kcheck-opt.correct{border-color:#3ecfcf;background:rgba(62,207,207,.08);color:#3ecfcf}
-.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.08);color:var(--danger)}
-.kcheck-opt.reveal-correct{border-color:#3ecfcf;background:rgba(62,207,207,.06);color:#3ecfcf;opacity:.7}
-.kcheck-opt.disabled{cursor:default}
-.kcheck-feedback{font-size:13px;line-height:1.6;padding:12px 14px;border-radius:6px;margin-top:12px;display:none}
-.kcheck-feedback.show{display:block}
-.kcheck-feedback.good{background:rgba(62,207,207,.08);color:#3ecfcf;border:1px solid rgba(62,207,207,.2)}
-.kcheck-feedback.bad{background:rgba(240,90,90,.07);color:#f08080;border:1px solid rgba(240,90,90,.2)}
-.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
-.lab-step{display:flex;gap:20px;position:relative}
-.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
-.step-num{width:32px;height:32px;border-radius:50%;background:var(--lab-dim);border:1px solid rgba(240,200,74,.3);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--lab);flex-shrink:0}
-.step-connector{width:1px;background:var(--border);flex:1;margin:4px 0;min-height:24px}
-.step-content{flex:1;padding-bottom:32px}
-.step-title{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--text);margin-bottom:12px;letter-spacing:.02em}
-.step-body{font-size:14px;color:#9aa3ba;line-height:1.7}
-.step-body ol,.step-body ul{padding-left:18px;margin:8px 0}
-.step-body li{margin-bottom:6px}
-.step-body p{margin-bottom:12px}
-.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:#c8d0e0}
-.checklist{display:flex;flex-direction:column;gap:8px;margin:20px 0 32px}
-.check-item{display:flex;align-items:flex-start;gap:14px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:border-color .15s}
-.check-item:hover{border-color:var(--border-hi)}
-.check-item.checked{border-color:rgba(240,200,74,.3);background:var(--lab-dim)}
-.check-box{width:18px;height:18px;border-radius:4px;border:1px solid var(--border-hi);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;transition:all .2s}
-.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
-.check-text{font-size:13.5px;color:#9aa3ba;line-height:1.5}
-.check-text code{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:var(--pill);padding:1px 5px;border-radius:3px;color:#c8d0e0}
-.checklist-progress{display:flex;align-items:center;gap:14px;margin-bottom:12px}
-.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease;width:0%}
-.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
-.lesson-nav-footer{display:flex;gap:12px;margin-top:40px;padding-top:28px;border-top:1px solid var(--border)}
-.prev-btn,.next-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;padding:10px 22px;border-radius:6px;cursor:pointer;transition:all .15s}
-.prev-btn{background:transparent;border:1px solid var(--border-hi);color:var(--muted)}.prev-btn:hover{color:var(--text);border-color:var(--text)}
-.next-btn{background:var(--accent);border:1px solid var(--accent);color:#fff;font-weight:600}.next-btn:hover{opacity:.85}
-.lab-btn{background:var(--lab);border-color:var(--lab);color:#0d0f14}
-.completion-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:48px;text-align:center;max-width:520px;margin:0 auto}
-.completion-icon{font-size:48px;display:block;margin-bottom:20px}
-.completion-card h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;color:#e8eef8;margin-bottom:14px}
-.completion-card p{font-size:14px;color:#6a7490;line-height:1.7;margin-bottom:24px}
-.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,90,90,.1);border:1px solid rgba(240,90,90,.2);border-radius:20px;padding:7px 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--w4)}
-.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:var(--lab-dim);border:1px solid rgba(240,200,74,.2);border-radius:20px;padding:7px 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--lab)}
-@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 20px 60px}.lesson-topbar{padding:14px 20px}}
-</style>
+<link rel="stylesheet" href="shared.css">
 </head>
 <body>
 <div class="shell">
@@ -131,6 +16,30 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <h2>Lambda SOAR: Automated Incident Response</h2>
     <div class="sidebar-meta"><span class="chip">Advanced</span><span class="chip">4 hours</span><span class="chip">SOAR</span></div>
   </div>
+  <div class="sidebar-back">
+    <a class="back-index" href="../index.html">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Course Index
+    </a>
+    <div class="week-jumps-label">Jump to week</div>
+    <div class="week-jumps">
+      <a class="week-jump wj1" href="../index.html#week-1">W1</a>
+      <a class="week-jump wj2" href="../index.html#week-2">W2</a>
+      <a class="week-jump wj3" href="../index.html#week-3">W3</a>
+      <a class="week-jump wj4" href="../index.html#week-4">W4</a>
+    </div>
+    <div class="day-nav-label">Week 4 days</div>
+    <div class="day-nav">
+      <a class="day-link" href="day-22.html">D22</a>
+      <a class="day-link" href="day-23.html">D23</a>
+      <a class="day-link" href="day-24.html">D24</a>
+      <a class="day-link" href="day-25.html">D25</a>
+      <a class="day-link current" href="day-26.html">D26</a>
+      <a class="day-link" href="day-27.html">D27</a>
+      <a class="day-link" href="day-28.html">D28</a>
+    </div>
+  </div>
+
   <nav class="lesson-nav">
     <div class="nav-group-label">Lessons</div>
     <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">1</span><span class="nav-label">SOAR: The Automation Philosophy</span><span class="nav-check">✓</span></div>
@@ -471,7 +380,7 @@ git push</pre></div>
       <h1>Day 26 Complete</h1>
       <p>Detection to remediation in under 30 seconds — your SOAR pipeline is live. Tomorrow: ScoutSuite external assessment and risk prioritisation — adding business context to everything you've built.</p>
       <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
-      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 8 complete</div>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> complete</div>
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
         <a href="day-25.html" style="text-decoration:none"><button class="prev-btn">← Day 25</button></a>
         <a href="day-27.html" style="text-decoration:none"><button class="next-btn">Day 27 →</button></a>
@@ -480,29 +389,21 @@ git push</pre></div>
   </div>
 </main>
 </div>
+<script src="csm-core.js"></script>
 <script>
-const STORAGE_KEY='csm-day26';const TOTAL=5;
-const titles=['SOAR: The Automation Philosophy','The EventBridge → Lambda Pattern','Idempotency: Critical for Automation','What to Automate vs. Gate','Hands-on: Deploy the SOAR Pipeline'];
-const fb={
+initPage({
+  storageKey: 'csm-day26',
+  total: 5,
+  quizCount: 4,
+  checkTotal: 8,
+  titles: ['SOAR: The Automation Philosophy','The EventBridge → Lambda Pattern','Idempotency: Critical for Automation','What to Automate vs. Gate','Hands-on: Deploy the SOAR Pipeline'],
+  fb: {
   0:{good:"Correct. The value of SOAR isn't headcount reduction — it's capacity reallocation. 200 low/medium findings consuming analyst time every week is 200 opportunities for a real High/Critical finding to sit unreviewed. SOAR eliminates that queue, freeing three analysts to focus entirely on the 30 findings that actually require human judgement, investigation, and decision-making. The quality and speed of response to genuinely serious findings improves dramatically.",bad:"Not quite. SOAR's primary value is not eliminating analyst roles or removing human oversight from complex findings. The 30 high/critical findings still need human investigation — they involve credential compromise, active threats, and decisions that require context only a human can provide. The correct value proposition: SOAR handles the 200 routine findings automatically, freeing your team's full capacity for the 30 that genuinely matter."},
   1:{good:"Correct. EventBridge provides at-least-once delivery — the same event can arrive more than once. An idempotent Lambda handles this gracefully: it checks the current state of the bucket, finds it already private (from the first execution), logs that no action is needed, and exits cleanly. No error, no noise, no side effects. This is the expected and correct behaviour — the pipeline appears to work exactly once even though it ran twice.",bad:"Not quite. EventBridge guarantees at-least-once delivery, not exactly-once — duplicate events are a normal occurrence, not an edge case to be eliminated. An S3 PutPublicAccessBlock call on an already-private bucket doesn't raise an error by default, but relying on that silent behaviour isn't idempotency — it's hoping the API doesn't change. True idempotency means explicitly checking state before acting, so the function's behaviour is deterministic regardless of how many times it runs."},
   2:{good:"Correct. This is the check-first idempotent pattern applied to IAM. Call ListAccessKeys to get the current status of the key. If Status is already Inactive, log 'already disabled' and return successfully — no call to UpdateAccessKey, no noise in CloudTrail from a redundant operation, no risk of an unintended side effect. The function completes successfully either way, and the second execution is indistinguishable from the first in terms of outcome.",bad:"Not quite. While calling UpdateAccessKey(Status=Inactive) on an already-inactive key may silently succeed, it's not true idempotency — it relies on the API's implementation detail rather than explicitly checking state. This creates unnecessary CloudTrail entries (a second UpdateAccessKey event), adds latency, and may fail if the key doesn't exist. Raising an exception prevents the function from completing, which causes Lambda retries. Re-enabling and disabling is a brief re-exposure and should never be done."},
   3:{good:"Correct. Tor IP findings have a meaningful false positive rate — some developers and security researchers legitimately route traffic through Tor for privacy. Auto-disabling a key without human review could break a legitimate workflow and cause more disruption than the incident response is worth. The right level is auto-contain (disable the key to stop potential misuse) plus immediate human review to confirm whether this is a real incident or a legitimate use case. This balances speed of containment with accuracy of response.",bad:"Not quite. Tor IP findings are not always malicious — some developers legitimately use Tor for privacy. Auto-disabling keys without review has a meaningful false positive rate that can break legitimate workflows. But permanently suppressing Tor findings would hide real attacker activity. The correct level is auto-contain (disable key, capture session data) + immediate human escalation for review. This contains the blast radius of a real compromise while preserving the ability to quickly re-enable the key if it's a false positive."}
-};
-let state=loadState();
-function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
-function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
-function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
-function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
-function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/4*100);document.getElementById('score-val').textContent=state.correct.length+' / 4 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked;document.getElementById('pane-complete').classList.add('active');document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
-function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
-function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
-function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
-function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
-function updateChecklist(){const total=8,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
-function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
-function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const opts=document.querySelectorAll('#pane-'+idx+' .kcheck-opt');if(!opts.length)return;opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
-restoreState();
+}
+});
 </script>
 </body>
 </html>

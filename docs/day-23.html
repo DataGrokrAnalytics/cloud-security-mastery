@@ -6,122 +6,7 @@
 <title>Day 23 — GuardDuty Threat Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#f05a5a;--accent-dim:rgba(240,90,90,.08);--amber:#f0924a;--violet:#8a7fff;--green:#4af0c4;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w4:#f05a5a;}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
-.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
-.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
-.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
-.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w4);margin-bottom:6px}
-.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
-.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
-.lesson-nav{padding:16px 0;flex:1}
-.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
-.nav-item:hover{background:rgba(255,255,255,.03)}
-.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
-.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
-.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
-.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
-.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
-.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
-.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
-.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
-.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
-.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
-.main{display:flex;flex-direction:column}
-.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
-.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
-.nav-arrows{display:flex;gap:8px}
-.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
-.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
-.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
-.lesson-pane.active{display:flex}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
-.tag-concept{color:var(--violet)}.tag-ops{color:var(--amber)}.tag-security{color:var(--w4)}.tag-lab{color:var(--lab)}.tag-threat{color:var(--accent)}
-.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
-.lesson-pane h1 em{font-style:italic;color:var(--accent)}
-.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
-.lesson-pane strong{color:#e0e6f0;font-weight:500}
-.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
-.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
-.callout.breach{border-color:var(--accent);background:var(--accent-dim)}.callout.breach .callout-title{color:var(--accent)}
-.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
-.callout.tip{border-color:var(--green);background:rgba(74,240,196,.06)}.callout.tip .callout-title{color:var(--green)}
-.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
-.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
-.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
-.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
-.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
-.styled-table tr:hover td{background:rgba(255,255,255,.02)}
-.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--w4)}
-.finding-card{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:16px 0}
-.finding-header{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface)}
-.finding-type{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#e4eaf6}
-.sev-badge{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;padding:3px 9px;border-radius:3px}
-.sev-critical{background:rgba(240,90,90,.2);color:var(--accent)}
-.sev-high{background:rgba(240,146,74,.2);color:var(--amber)}
-.sev-medium{background:rgba(138,127,255,.2);color:var(--violet)}
-.finding-body{padding:14px 18px;font-size:13.5px;color:#8a92a8;line-height:1.65}
-.finding-body strong{color:var(--text);display:block;margin-bottom:4px}
-.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
-.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
-.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
-.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
-.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
-.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
-.code-block pre .hl{color:#f05a5a}.code-block pre .hl2{color:var(--amber)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}
-.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
-.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--w4);margin-bottom:14px}
-.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
-.kcheck-options{display:flex;flex-direction:column;gap:10px}
-.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
-.kcheck-opt:hover:not(.disabled){border-color:var(--w4);background:rgba(240,90,90,.05);color:var(--text)}
-.kcheck-opt.correct{border-color:var(--green);background:rgba(74,240,196,.07);color:var(--green)}
-.kcheck-opt.wrong{border-color:var(--accent);background:rgba(240,90,90,.07);color:var(--accent)}
-.kcheck-opt.reveal-correct{border-color:rgba(74,240,196,.4);background:rgba(74,240,196,.04);color:#3ab89a}
-.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
-.kcheck-opt.correct .opt-key{background:var(--green);color:var(--bg)}.kcheck-opt.wrong .opt-key{background:var(--accent);color:#fff}.kcheck-opt.reveal-correct .opt-key{background:rgba(74,240,196,.2);color:var(--green)}
-.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
-.kcheck-feedback.show{display:block}.kcheck-feedback.good{background:rgba(74,240,196,.08);border:1px solid rgba(74,240,196,.2);color:#5ab8a8}.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
-.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
-.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border)}.lab-step:last-child{border-bottom:none}
-.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
-.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center}
-.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}.lab-step:last-child .step-connector{display:none}
-.step-content{flex:1;padding-top:4px}
-.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
-.step-body{font-size:14px;color:var(--text);line-height:1.7}
-.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}.step-body li{color:#a0a8bc}
-.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
-.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
-.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
-.check-item:hover{border-color:var(--border-hi)}.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
-.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
-.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
-.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
-.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
-.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
-.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
-.next-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px}
-.next-btn:hover{opacity:.88}.next-btn.lab-btn{background:var(--lab);color:var(--bg)}
-.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s;display:inline-flex;align-items:center}
-.prev-btn:hover{color:var(--text);border-color:var(--text)}
-.completion-card{text-align:center;padding:56px 32px}
-.completion-icon{font-size:48px;margin-bottom:20px;display:block}
-.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
-.completion-card p{color:var(--muted);max-width:420px;margin:0 auto 28px;font-size:14px}
-.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,90,90,.1);border:1px solid rgba(240,90,90,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
-.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
-::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
-@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.lesson-topbar{padding:14px 24px}}
-</style>
+<link rel="stylesheet" href="shared.css">
 </head>
 <body>
 <div class="shell">
@@ -131,6 +16,30 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <h2>GuardDuty<br>Threat Intelligence</h2>
     <div class="sidebar-meta"><span class="chip">GuardDuty</span><span class="chip">ML Detection</span><span class="chip">Threat Intel</span><span class="chip">4 lessons</span></div>
   </div>
+  <div class="sidebar-back">
+    <a class="back-index" href="../index.html">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Course Index
+    </a>
+    <div class="week-jumps-label">Jump to week</div>
+    <div class="week-jumps">
+      <a class="week-jump wj1" href="../index.html#week-1">W1</a>
+      <a class="week-jump wj2" href="../index.html#week-2">W2</a>
+      <a class="week-jump wj3" href="../index.html#week-3">W3</a>
+      <a class="week-jump wj4" href="../index.html#week-4">W4</a>
+    </div>
+    <div class="day-nav-label">Week 4 days</div>
+    <div class="day-nav">
+      <a class="day-link" href="day-22.html">D22</a>
+      <a class="day-link current" href="day-23.html">D23</a>
+      <a class="day-link" href="day-24.html">D24</a>
+      <a class="day-link" href="day-25.html">D25</a>
+      <a class="day-link" href="day-26.html">D26</a>
+      <a class="day-link" href="day-27.html">D27</a>
+      <a class="day-link" href="day-28.html">D28</a>
+    </div>
+  </div>
+
   <div class="lesson-nav">
     <div class="nav-group-label">Lessons</div>
     <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">How GuardDuty Detects Threats</span><span class="nav-check">✓</span></div>
@@ -455,7 +364,7 @@ git push</pre>
       <h1>Day 23 Complete</h1>
       <p>GuardDuty is your ML-powered watchdog — continuously analysing 6 data sources for threats you didn't know to look for. Tomorrow: Security Hub CNAPP — unifying all your Week 4 signals into one risk dashboard.</p>
       <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
-      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 7 complete</div>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> complete</div>
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
         <a href="day-22.html" style="text-decoration:none"><button class="prev-btn">← Day 22</button></a>
         <a href="day-24.html" style="text-decoration:none"><button class="next-btn">Day 24 →</button></a>
@@ -464,29 +373,21 @@ git push</pre>
   </div>
 </div>
 </div>
+<script src="csm-core.js"></script>
 <script>
-const STORAGE_KEY='csm-day23';const TOTAL=5;
-const titles=['How GuardDuty Detects Threats','Finding Types: Reconnaissance to Impact','Malware & Crypto Mining Detection','Triage, Suppression & Response','Hands-on: Enable GuardDuty + Findings Analysis'];
-const fb={
+initPage({
+  storageKey: 'csm-day23',
+  total: 5,
+  quizCount: 4,
+  checkTotal: 7,
+  titles: ['How GuardDuty Detects Threats','Finding Types: Reconnaissance to Impact','Malware & Crypto Mining Detection','Triage, Suppression & Response','Hands-on: Enable GuardDuty + Findings Analysis'],
+  fb: {
   0:{good:"Correct. The key word is 'Tor' — this is specifically a Tor exit node, not just any VPN IP. A regular VPN won't trigger this finding. Before creating any suppression rule, confirm it's actually the developer's known VPN exit node and not a real Tor connection. Then scope the suppression tightly: this finding type + this specific user ARN + this IP range. A broad suppression ('disable Tor detection') would hide real attacker activity using Tor for anonymity.",bad:"Not quite. This finding is specific to Tor exit nodes, not generic VPN IPs — confirm that the developer's VPN actually routes through a Tor exit node before treating this as a false positive. The correct response is always investigate first, then suppress with a tightly-scoped rule if confirmed legitimate. Archiving manually every time is operationally unsustainable. Disabling the Tor detection rule account-wide would remove protection against real Tor-based attacks."},
   1:{good:"Correct. Three findings on the same resource in sequence tell a kill-chain story: port probe (attacker scanned and found an open port) → SSH brute force (attacker tried to authenticate) → C2 activity (attacker succeeded and established command-and-control). This is a textbook progression from MITRE TA0043 → TA0001 → TA0011. The instance is almost certainly compromised. Immediate actions: isolate with security group change, take EBS snapshot for forensics, rotate any credentials on or accessible from the instance.",bad:"Not quite. The sequence matters enormously. Three findings on the same resource over 4 hours is a kill-chain progression, not coincidence: reconnaissance confirmed an open port, brute force gained access, and C2 activity confirms the attacker has a foothold and is talking to a command server. Treating these as unrelated would leave a compromised instance active on your network. Always correlate findings on the same resource within a time window — it's how you distinguish an incident from an alert."},
   2:{good:"Correct. Two critical immediate checks: (1) CloudTrail in ap-southeast-2 for RunInstances — who launched this instance? If it's a role or user that doesn't normally operate in that region, you have credential compromise. Check the source IP of the API call. (2) Cross-region scope — crypto miners are almost always multi-region operations. Check CloudTrail and GuardDuty in every region for similar activity. An instance in one unusual region is rarely the full picture.",bad:"Not quite. The security group doesn't explain crypto mining DNS queries — the instance is communicating outbound to mining pools, not receiving inbound attacks. IAM permissions don't explain it either — mining software doesn't need elevated AWS permissions to mine. The critical questions are: who launched this instance in a region your team doesn't use (compromised credential?), and is there similar activity in other regions (how widespread is the compromise)?"},
   3:{good:"Correct. Suppression rules are the right tool for known-legitimate patterns. The key is scoping: suppress exactly (this finding type) AND (this specific NAT Gateway EIP) — not broadly disabling threat intelligence for the whole account. This way the detection still fires for all other IPs, and only the confirmed false positive pattern is silenced. Document the suppression rule with a business justification so future engineers know why it exists.",bad:"Not quite. Disabling threat intelligence entirely removes protection for all IPs, not just your NAT Gateway. Manually archiving every daily finding is unsustainable — that's what suppression rules are built for. Replacing the NAT Gateway IP doesn't help — the new IP could also appear in threat intel feeds, and this misunderstands what the finding means (it means traffic is routing through a flagged IP, which your NAT Gateway does legitimately). Create a scoped suppression rule."}
-};
-let state=loadState();
-function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
-function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
-function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
-function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
-function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/4*100);document.getElementById('score-val').textContent=state.correct.length+' / 4 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked;document.getElementById('pane-complete').classList.add('active');document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
-function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
-function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
-function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
-function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
-function updateChecklist(){const total=7,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
-function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
-function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const opts=document.querySelectorAll('#pane-'+idx+' .kcheck-opt');if(!opts.length)return;opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
-restoreState();
+}
+});
 </script>
 </body>
 </html>

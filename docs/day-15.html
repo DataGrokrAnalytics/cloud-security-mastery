@@ -6,121 +6,7 @@
 <title>Day 15 — VPC Network Foundation</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#3fb97a;--accent-dim:rgba(63,185,122,.08);--amber:#f0924a;--violet:#8a7fff;--danger:#f05a5a;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w3:#3fb97a;}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
-.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
-.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
-.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
-.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--w3);margin-bottom:6px}
-.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
-.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
-.lesson-nav{padding:16px 0;flex:1}
-.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
-.nav-item:hover{background:rgba(255,255,255,.03)}
-.nav-item.active{background:var(--accent-dim);border-left-color:var(--accent)}.nav-item.active .nav-label{color:var(--accent)}
-.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
-.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
-.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
-.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
-.nav-item.done .nav-check{background:var(--accent);border-color:var(--accent);color:var(--bg)}
-.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
-.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
-.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
-.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0%}
-.main{display:flex;flex-direction:column}
-.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
-.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
-.nav-arrows{display:flex;gap:8px}
-.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
-.arrow-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.arrow-btn:disabled{opacity:.3;cursor:default}
-.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
-.lesson-pane.active{display:flex}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
-.tag-concept{color:var(--violet)}.tag-warning{color:var(--amber)}.tag-security{color:var(--accent)}.tag-lab{color:var(--lab)}.tag-network{color:var(--w3)}.tag-arch{color:#4ab8d4}
-.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
-.lesson-pane h1 em{font-style:italic;color:var(--accent)}.lab-pane h1 em{color:var(--lab)}
-.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
-.lesson-pane strong{color:#e0e6f0;font-weight:500}
-.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
-.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
-.callout.breach{border-color:var(--danger);background:rgba(240,90,90,.06)}.callout.breach .callout-title{color:var(--danger)}
-.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
-.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
-.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
-.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
-.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
-.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
-.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
-.styled-table tr:hover td{background:rgba(255,255,255,.02)}
-.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--w3)}
-.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
-.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
-.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
-.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
-.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
-.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
-.code-block pre .hl{color:var(--w3)}.code-block pre .hl2{color:var(--amber)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}
-.vpc-diagram{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:28px;margin:24px 0;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:2;color:#6a7490}
-.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
-.compare-card{border:1px solid var(--border);border-radius:8px;overflow:hidden}
-.compare-card-head{padding:12px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;display:flex;align-items:center;gap:8px}
-.compare-card.sg .compare-card-head{background:rgba(63,185,122,.08);color:var(--w3)}
-.compare-card.nacl .compare-card-head{background:rgba(240,146,74,.08);color:var(--amber)}
-.compare-card-body{padding:14px 16px;font-size:13px;line-height:1.65;color:#8a92a8}
-.compare-card-body strong{color:var(--text);display:block;margin-bottom:4px}
-.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
-.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--w3);margin-bottom:14px}
-.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
-.kcheck-options{display:flex;flex-direction:column;gap:10px}
-.kcheck-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:1px solid var(--border-hi);border-radius:7px;cursor:pointer;transition:all .15s;font-size:13.5px;color:#8a92a8;background:transparent;width:100%;text-align:left}
-.kcheck-opt:hover:not(.disabled){border-color:var(--w3);background:rgba(63,185,122,.05);color:var(--text)}
-.kcheck-opt.correct{border-color:var(--accent);background:rgba(63,185,122,.07);color:var(--accent)}
-.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.07);color:var(--danger)}
-.kcheck-opt.reveal-correct{border-color:rgba(63,185,122,.4);background:rgba(63,185,122,.04);color:#5a9e7a}
-.opt-key{font-family:'IBM Plex Mono',monospace;font-size:11px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);transition:all .15s;margin-top:1px}
-.kcheck-opt.correct .opt-key{background:var(--accent);color:var(--bg)}.kcheck-opt.wrong .opt-key{background:var(--danger);color:#fff}.kcheck-opt.reveal-correct .opt-key{background:rgba(63,185,122,.2);color:var(--w3)}
-.kcheck-feedback{margin-top:18px;padding:14px 16px;border-radius:7px;font-size:13.5px;line-height:1.65;display:none}
-.kcheck-feedback.show{display:block}.kcheck-feedback.good{background:rgba(63,185,122,.08);border:1px solid rgba(63,185,122,.2);color:#7ec8a0}.kcheck-feedback.bad{background:rgba(240,90,90,.08);border:1px solid rgba(240,90,90,.2);color:#c47a7a}
-.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
-.lab-step{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border)}.lab-step:last-child{border-bottom:none}
-.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
-.step-num{width:32px;height:32px;border-radius:50%;background:var(--pill);border:2px solid var(--border-hi);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;position:relative;z-index:1}
-.step-connector{width:2px;flex:1;background:var(--border);margin-top:4px}.lab-step:last-child .step-connector{display:none}
-.step-content{flex:1;padding-top:4px}
-.step-title{font-family:'DM Serif Display',serif;font-size:16px;color:#e4eaf6;margin-bottom:8px}
-.step-body{font-size:14px;color:var(--text);line-height:1.7}
-.step-body ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;margin:10px 0}.step-body li{color:#a0a8bc}
-.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:var(--violet)}
-.checklist{display:flex;flex-direction:column;gap:10px;margin:24px 0}
-.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;user-select:none}
-.check-item:hover{border-color:var(--border-hi)}.check-item.checked{border-color:rgba(240,200,74,.3);background:rgba(240,200,74,.05)}
-.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px;font-size:10px;color:transparent}
-.check-item.checked .check-box{background:var(--lab);border-color:var(--lab);color:var(--bg)}
-.check-text{font-size:13.5px;color:#8a92a8;line-height:1.5}.check-item.checked .check-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
-.checklist-progress{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.checklist-progress-fill{height:100%;background:var(--lab);border-radius:2px;transition:width .4s ease}
-.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
-.lesson-nav-footer{display:flex;justify-content:space-between;align-items:center;margin-top:52px;padding-top:28px;border-top:1px solid var(--border)}
-.next-btn{background:var(--accent);color:var(--bg);border:none;border-radius:6px;padding:11px 24px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:opacity .15s;display:flex;align-items:center;gap:8px;text-decoration:none}
-.next-btn:hover{opacity:.88}.next-btn.lab-btn{background:var(--lab)}
-.prev-btn{background:transparent;color:var(--muted);border:1px solid var(--border-hi);border-radius:6px;padding:11px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.04em;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center}
-.prev-btn:hover{color:var(--text);border-color:var(--text)}.prev-btn:disabled{opacity:.3;cursor:default}
-.completion-card{text-align:center;padding:56px 32px}
-.completion-icon{font-size:48px;margin-bottom:20px;display:block}
-.completion-card h1{font-family:'DM Serif Display',serif;font-size:32px;color:var(--accent);margin-bottom:12px}
-.completion-card p{color:var(--muted);max-width:420px;margin:0 auto 28px;font-size:14px}
-.score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(63,185,122,.1);border:1px solid rgba(63,185,122,.25);color:var(--accent);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:8px}
-.lab-score-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(240,200,74,.1);border:1px solid rgba(240,200,74,.25);color:var(--lab);border-radius:40px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:32px}
-::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
-@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 24px 60px}.lesson-topbar{padding:14px 24px}.compare-grid{grid-template-columns:1fr}}
-</style>
+<link rel="stylesheet" href="shared.css">
 </head>
 <body>
 <div class="shell">
@@ -130,6 +16,30 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <h2>VPC Network<br>Foundation</h2>
     <div class="sidebar-meta"><span class="chip">VPC</span><span class="chip">SG</span><span class="chip">NACL</span><span class="chip">4 lessons</span><span class="chip">1 lab</span></div>
   </div>
+  <div class="sidebar-back">
+    <a class="back-index" href="../index.html">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Course Index
+    </a>
+    <div class="week-jumps-label">Jump to week</div>
+    <div class="week-jumps">
+      <a class="week-jump wj1" href="../index.html#week-1">W1</a>
+      <a class="week-jump wj2" href="../index.html#week-2">W2</a>
+      <a class="week-jump wj3" href="../index.html#week-3">W3</a>
+      <a class="week-jump wj4" href="../index.html#week-4">W4</a>
+    </div>
+    <div class="day-nav-label">Week 3 days</div>
+    <div class="day-nav">
+      <a class="day-link current" href="day-15.html">D15</a>
+      <a class="day-link" href="day-16.html">D16</a>
+      <a class="day-link" href="day-17.html">D17</a>
+      <a class="day-link" href="day-18.html">D18</a>
+      <a class="day-link" href="day-19.html">D19</a>
+      <a class="day-link" href="day-20.html">D20</a>
+      <a class="day-link" href="day-21.html">D21</a>
+    </div>
+  </div>
+
   <div class="lesson-nav">
     <div class="nav-group-label">Lessons</div>
     <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">01</span><span class="nav-label">Why Network Segmentation Matters</span><span class="nav-check">✓</span></div>
@@ -420,38 +330,30 @@ git push</pre>
       <h1>Day 15 Complete</h1>
       <p>You've built the network foundation every Week 3 service will run inside. Day 16 adds data-at-rest encryption with S3 and KMS customer-managed keys.</p>
       <div class="score-pill"><span>⚡</span> Quiz: <span id="score-val">—</span></div><br>
-      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 6 complete</div>
+      <div class="lab-score-pill"><span>🔬</span> Lab: <span id="lab-score-val">—</span> complete</div>
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-        <a href="../../index.html" style="text-decoration:none"><button class="prev-btn">← Course Index</button></a>
+        <a href="../index.html" style="text-decoration:none"><button class="prev-btn">← Course Index</button></a>
         <a href="day-16.html" style="text-decoration:none"><button class="next-btn">Day 16 →</button></a>
       </div>
     </div>
   </div>
 </div>
 </div>
+<script src="csm-core.js"></script>
 <script>
-const STORAGE_KEY='csm-day15';const TOTAL=5;
-const titles=['Why Network Segmentation Matters','VPC Anatomy: Subnets, Routes & IGW','Security Groups vs. NACLs','3-Tier Architecture Pattern','Hands-on: Build a 3-Tier VPC'];
-const fb={
+initPage({
+  storageKey: 'csm-day15',
+  total: 5,
+  quizCount: 4,
+  checkTotal: 6,
+  titles: ['Why Network Segmentation Matters','VPC Anatomy: Subnets, Routes & IGW','Security Groups vs. NACLs','3-Tier Architecture Pattern','Hands-on: Build a 3-Tier VPC'],
+  fb: {
   0:{good:"Correct. Routing is evaluated before any firewall rule. The DB subnet's route table only has a local route (10.0.0.0/16 → local). Packets from the public subnet with a destination in the DB subnet cannot be forwarded because there is no matching route. Security Groups and NACLs are secondary controls that only apply if a packet can actually be routed to its destination.",bad:"Not quite. While the RDS Security Group and DB NACL are important, routing is checked first. If there is no route for the traffic, the packet is dropped at the router before any firewall rule is ever evaluated. In a properly tiered VPC, the route table alone prevents the public subnet from directly reaching the DB subnet."},
   1:{good:"Correct. A NAT Gateway in the public subnet handles outbound address translation. The private instance sends packets to the NAT GW via the private subnet's route table, and the NAT GW forwards them using its public IP. Return packets come back to the NAT GW and are translated back to the private IP. The private instance itself never has a public IP and remains unreachable from the internet.",bad:"Not quite. Assigning a public IP and an IGW route defeats the purpose of a private subnet — the instance becomes internet-reachable. A Security Group outbound rule is necessary but not sufficient; it controls what the Security Group permits, but without a NAT Gateway, there is simply no path for a private instance to reach internet IPs at all."},
   2:{good:"Correct. Security Groups are allow-only — they cannot explicitly deny. The NACL is the correct tool because it supports deny rules and applies at the subnet boundary, covering every instance simultaneously. Setting a low rule number (e.g. 50) ensures the deny is evaluated before any allow rules. This takes effect within seconds without touching individual Security Groups.",bad:"Not quite. Security Groups have no deny capability — you cannot add a 'block IP X' rule. The NACL is the right tool here: it operates at the subnet level (one rule covers all instances), supports explicit deny, and processes rules in numeric order so a low-numbered deny blocks the attacker before any allow rule is reached."},
   3:{good:"Correct. Transit Gateway solves the non-transitive peering problem at scale. With 15 VPCs, a full mesh would require up to 105 peering connections. TGW acts as a regional hub: each VPC attaches once, and TGW route tables define which VPCs can exchange traffic. You can enforce complete isolation by simply not advertising routes for specific VPCs in the TGW route table.",bad:"Not quite. VPC peering is non-transitive and becomes exponentially complex at scale — 15 VPCs would need up to 105 peering connections, each manually maintained. Merging VPCs loses the isolation benefit. Transit Gateway is the AWS-native solution for multi-VPC connectivity with centralised routing control and selective isolation policies."}
-};
-let state=loadState();
-function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
-function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
-function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
-function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
-function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/4*100);document.getElementById('score-val').textContent=state.correct.length+' / 4 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked;document.getElementById('pane-complete').classList.add('active');document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
-function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
-function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
-function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
-function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
-function updateChecklist(){const total=6,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(4))markDone(4);}
-function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
-function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const opts=document.querySelectorAll('#pane-'+idx+' .kcheck-opt');if(!opts.length)return;opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
-restoreState();
+}
+});
 </script>
 </body>
 </html>

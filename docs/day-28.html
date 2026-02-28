@@ -6,134 +6,7 @@
 <title>Day 28 — Executive Portfolio & Programme Completion</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#0d0f14;--surface:#13161d;--surface2:#181c26;--border:#1f2330;--border-hi:#2e3447;--text:#c8d0e0;--muted:#5a6178;--faint:#3a3f52;--accent:#f05a5a;--accent-dim:rgba(240,90,90,.08);--amber:#f0924a;--violet:#8a7fff;--danger:#f05a5a;--code-bg:#0a0c10;--pill:#1a1f2e;--lab:#f0c84a;--lab-dim:rgba(240,200,74,.08);--w4:#f05a5a;--gold:#ffd700;}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.75;min-height:100vh;overflow-x:hidden}
-.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
-.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:32px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
-.sidebar-header{padding:0 24px 24px;border-bottom:1px solid var(--border)}
-.day-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
-.sidebar-header h2{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;color:#e4eaf6;line-height:1.4}
-.sidebar-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.chip{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;background:var(--pill);color:var(--muted);padding:3px 8px;border-radius:3px}
-.lesson-nav{padding:16px 0;flex:1}
-.nav-group-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);padding:10px 24px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;transition:background .15s;border-left:2px solid transparent}
-.nav-item:hover{background:rgba(255,255,255,.03)}
-.nav-item.active{background:rgba(255,215,0,.07);border-left-color:var(--gold)}.nav-item.active .nav-label{color:var(--gold)}
-.nav-item.lab-item.active{background:var(--lab-dim);border-left-color:var(--lab)}.nav-item.lab-item.active .nav-label{color:var(--lab)}
-.nav-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);width:18px;flex-shrink:0;text-align:right}
-.nav-label{font-size:12.5px;color:#8a92a8;line-height:1.3}
-.nav-check{margin-left:auto;width:14px;height:14px;border-radius:50%;border:1px solid var(--border-hi);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .2s}
-.nav-item.done .nav-check{background:var(--gold);border-color:var(--gold);color:var(--bg)}
-.nav-item.lab-item.done .nav-check{background:var(--lab);border-color:var(--lab);color:var(--bg)}
-.sidebar-footer{padding:20px 24px;border-top:1px solid var(--border);margin-top:auto}
-.progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
-.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .4s ease;width:0%}
-.main{display:flex;flex-direction:column}
-.lesson-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10}
-.lesson-crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}.lesson-crumb span{color:var(--text)}
-.nav-arrows{display:flex;gap:8px}
-.arrow-btn{background:var(--pill);border:1px solid var(--border-hi);color:var(--muted);border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .15s}
-.arrow-btn:hover:not(:disabled){border-color:var(--gold);color:var(--gold)}.arrow-btn:disabled{opacity:.3;cursor:default}
-.lesson-pane{display:none;flex-direction:column;padding:56px 48px 80px;max-width:760px;animation:fadeIn .3s ease}
-.lesson-pane.active{display:flex}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.lesson-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
-.tag-gold{color:var(--gold)}.tag-concept{color:var(--violet)}.tag-arch{color:#4ab8d4}.tag-lab{color:var(--lab)}
-.lesson-pane h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;line-height:1.25;color:#e8eef8;margin-bottom:24px}
-.lesson-pane h1 em{font-style:italic;color:var(--gold)}.lab-pane h1 em{color:var(--lab)}
-.lesson-pane h2{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;color:#e4eaf6;margin:32px 0 14px}
-.lesson-pane p{color:var(--text);margin-bottom:18px;font-size:15px}
-.lesson-pane strong{color:#e0e6f0;font-weight:500}
-.lesson-pane ul,ol{padding-left:20px;margin-bottom:18px;color:#a0a8bc;line-height:1.9}
-.lesson-pane li{margin-bottom:4px}
-.callout{border-left:3px solid;padding:16px 20px;border-radius:0 6px 6px 0;margin:24px 0;font-size:14px;line-height:1.7}
-.callout-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600}
-.callout.gold{border-color:var(--gold);background:rgba(255,215,0,.05)}.callout.gold .callout-title{color:var(--gold)}
-.callout.insight{border-color:var(--violet);background:rgba(138,127,255,.06)}.callout.insight .callout-title{color:var(--violet)}
-.callout.tip{border-color:var(--accent);background:var(--accent-dim)}.callout.tip .callout-title{color:var(--accent)}
-.callout.warning{border-color:var(--amber);background:rgba(240,146,74,.06)}.callout.warning .callout-title{color:var(--amber)}
-.callout.lab-note{border-color:var(--lab);background:var(--lab-dim)}.callout.lab-note .callout-title{color:var(--lab)}
-.styled-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:13.5px}
-.styled-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
-.styled-table td{padding:11px 16px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
-.styled-table tr:hover td{background:rgba(255,255,255,.02)}
-.styled-table td:first-child{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--gold)}
-.layers-block{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:24px 28px;margin:24px 0;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:2;color:#6a7490}
-.layers-block .layer{color:var(--gold);font-weight:600}.layers-block .item{color:#a0a8bc}.layers-block .arrow{color:var(--faint)}
-.story-block{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 24px;margin:20px 0}
-.story-bad{font-size:13px;color:#8a3a3a;margin-bottom:12px;padding:10px 14px;background:rgba(240,90,90,.05);border-radius:4px}
-.story-good{font-size:13px;color:#3a8a6a;padding:10px 14px;background:rgba(62,207,150,.05);border-radius:4px}
-.story-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;font-weight:600}
-.story-bad .story-label{color:var(--danger)}.story-good .story-label{color:#3ecf96}
-.code-block{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;margin:20px 0;overflow:hidden}
-.code-header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
-.code-lang{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
-.copy-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);background:transparent;border:1px solid var(--border-hi);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .15s}
-.copy-btn:hover{color:var(--gold);border-color:var(--gold)}
-.code-block pre{font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;padding:16px 20px;color:#a8b4cc;overflow-x:auto}
-.code-block pre .hl{color:var(--gold)}.code-block pre .str{color:#7ec88c}.code-block pre .comment{color:var(--muted)}.code-block pre .key{color:#f0c84a}
-.kcheck{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px 28px 24px;margin:36px 0 24px}
-.kcheck-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
-.kcheck-q{font-size:15px;color:#d0d8ec;font-weight:500;margin-bottom:20px;line-height:1.5}
-.kcheck-options{display:flex;flex-direction:column;gap:10px}
-.kcheck-opt{background:var(--surface2);border:1px solid var(--border-hi);border-radius:7px;padding:12px 16px;cursor:pointer;font-size:13.5px;color:#9aa3ba;line-height:1.5;text-align:left;transition:all .15s}
-.kcheck-opt:hover:not(.disabled){border-color:var(--gold);color:var(--text);background:rgba(255,215,0,.05)}
-.kcheck-opt.correct{border-color:#3ecfcf;background:rgba(62,207,207,.08);color:#3ecfcf}
-.kcheck-opt.wrong{border-color:var(--danger);background:rgba(240,90,90,.08);color:var(--danger)}
-.kcheck-opt.reveal-correct{border-color:#3ecfcf;background:rgba(62,207,207,.06);color:#3ecfcf;opacity:.7}
-.kcheck-opt.disabled{cursor:default}
-.kcheck-feedback{font-size:13px;line-height:1.6;padding:12px 14px;border-radius:6px;margin-top:12px;display:none}
-.kcheck-feedback.show{display:block}
-.kcheck-feedback.good{background:rgba(62,207,207,.08);color:#3ecfcf;border:1px solid rgba(62,207,207,.2)}
-.kcheck-feedback.bad{background:rgba(240,90,90,.07);color:#f08080;border:1px solid rgba(240,90,90,.2)}
-.lab-steps{display:flex;flex-direction:column;gap:0;margin:24px 0}
-.lab-step{display:flex;gap:20px;position:relative}
-.step-num-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
-.step-num{width:32px;height:32px;border-radius:50%;background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.3);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--gold);flex-shrink:0}
-.step-connector{width:1px;background:var(--border);flex:1;margin:4px 0;min-height:24px}
-.step-content{flex:1;padding-bottom:32px}
-.step-title{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--text);margin-bottom:12px;letter-spacing:.02em}
-.step-body{font-size:14px;color:#9aa3ba;line-height:1.7}
-.step-body ol,.step-body ul{padding-left:18px;margin:8px 0}
-.step-body li{margin-bottom:6px}
-.step-body p{margin-bottom:12px}
-.step-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--pill);padding:1px 6px;border-radius:3px;color:#c8d0e0}
-.checklist{display:flex;flex-direction:column;gap:8px;margin:20px 0 32px}
-.check-item{display:flex;align-items:flex-start;gap:14px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:border-color .15s}
-.check-item:hover{border-color:var(--border-hi)}
-.check-item.checked{border-color:rgba(255,215,0,.3);background:rgba(255,215,0,.04)}
-.check-box{width:18px;height:18px;border-radius:4px;border:1px solid var(--border-hi);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;transition:all .2s}
-.check-item.checked .check-box{background:var(--gold);border-color:var(--gold);color:var(--bg)}
-.check-text{font-size:13.5px;color:#9aa3ba;line-height:1.5}
-.check-text code{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:var(--pill);padding:1px 5px;border-radius:3px;color:#c8d0e0}
-.checklist-progress{display:flex;align-items:center;gap:14px;margin-bottom:12px}
-.checklist-progress-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
-.checklist-progress-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .4s ease;width:0%}
-.checklist-progress-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap}
-.lesson-nav-footer{display:flex;gap:12px;margin-top:40px;padding-top:28px;border-top:1px solid var(--border)}
-.prev-btn,.next-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;padding:10px 22px;border-radius:6px;cursor:pointer;transition:all .15s}
-.prev-btn{background:transparent;border:1px solid var(--border-hi);color:var(--muted)}.prev-btn:hover{color:var(--text);border-color:var(--text)}
-.next-btn{background:var(--gold);border:1px solid var(--gold);color:#0d0f14;font-weight:600}.next-btn:hover{opacity:.85}
-.lab-btn{background:var(--lab);border-color:var(--lab);color:#0d0f14}
-.complete-pane-wrap{display:flex;align-items:center;justify-content:center;min-height:70vh;padding:40px 48px}
-.final-card{background:linear-gradient(135deg,rgba(255,215,0,.06),rgba(138,127,255,.04));border:1px solid rgba(255,215,0,.2);border-radius:16px;padding:56px 48px;text-align:center;max-width:580px;margin:0 auto}
-.final-icon{font-size:64px;display:block;margin-bottom:24px;line-height:1}
-.final-card h1{font-family:'DM Serif Display',serif;font-size:32px;font-weight:400;color:#f0e8c0;margin-bottom:16px}
-.final-card p{font-size:15px;color:#9aa3ba;line-height:1.7;margin-bottom:20px}
-.final-score-row{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin:24px 0}
-.final-pill{display:inline-flex;align-items:center;gap:8px;border-radius:20px;padding:8px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px}
-.fp-gold{background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.25);color:var(--gold)}
-.fp-lab{background:var(--lab-dim);border:1px solid rgba(240,200,74,.2);color:var(--lab)}
-.cert-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 24px;margin-top:28px;text-align:left}
-.cert-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
-.cert-item{display:flex;align-items:center;gap:10px;font-size:13.5px;color:#9aa3ba;margin-bottom:8px}
-.cert-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0}
-@media(max-width:768px){.shell{grid-template-columns:1fr}.sidebar{display:none}.lesson-pane{padding:32px 20px 60px}.lesson-topbar{padding:14px 20px}.complete-pane-wrap{padding:32px 20px}}
-</style>
+<link rel="stylesheet" href="shared.css">
 </head>
 <body>
 <div class="shell">
@@ -143,6 +16,30 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <h2>Executive Portfolio & Programme Completion</h2>
     <div class="sidebar-meta"><span class="chip">Capstone</span><span class="chip">4 hours</span><span class="chip">Portfolio</span></div>
   </div>
+  <div class="sidebar-back">
+    <a class="back-index" href="../index.html">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Course Index
+    </a>
+    <div class="week-jumps-label">Jump to week</div>
+    <div class="week-jumps">
+      <a class="week-jump wj1" href="../index.html#week-1">W1</a>
+      <a class="week-jump wj2" href="../index.html#week-2">W2</a>
+      <a class="week-jump wj3" href="../index.html#week-3">W3</a>
+      <a class="week-jump wj4" href="../index.html#week-4">W4</a>
+    </div>
+    <div class="day-nav-label">Week 4 days</div>
+    <div class="day-nav">
+      <a class="day-link" href="day-22.html">D22</a>
+      <a class="day-link" href="day-23.html">D23</a>
+      <a class="day-link" href="day-24.html">D24</a>
+      <a class="day-link" href="day-25.html">D25</a>
+      <a class="day-link" href="day-26.html">D26</a>
+      <a class="day-link" href="day-27.html">D27</a>
+      <a class="day-link current" href="day-28.html">D28</a>
+    </div>
+  </div>
+
   <nav class="lesson-nav">
     <div class="nav-group-label">Lessons</div>
     <div class="nav-item active" onclick="goTo(0)"><span class="nav-num">1</span><span class="nav-label">What You've Actually Built</span><span class="nav-check">✓</span></div>
@@ -391,7 +288,7 @@ git push origin v1.0.0</pre></div>
         <p>What makes this portfolio valuable isn't just the list of services enabled — it's the documented decisions: why each control exists, what attacker behaviour it defeats, how you prioritised, and what you'd do differently. That reasoning is what separates a practitioner from someone who followed a checklist.</p>
         <div class="final-score-row">
           <div class="final-pill fp-gold"><span>⚡</span> Quiz: <span id="score-val">—</span></div>
-          <div class="final-pill fp-lab"><span>🔬</span> Lab: <span id="lab-score-val">—</span> / 9</div>
+          <div class="final-pill fp-lab"><span>🔬</span> Lab: <span id="lab-score-val">—</span></div>
         </div>
         <div class="cert-box">
           <div class="cert-title">🚀 Recommended Next Steps</div>
@@ -408,28 +305,20 @@ git push origin v1.0.0</pre></div>
   </div>
 </main>
 </div>
+<script src="csm-core.js"></script>
 <script>
-const STORAGE_KEY='csm-day28';const TOTAL=4;
-const titles=['What You\'ve Actually Built','Telling the Story','What Comes Next','Hands-on: Finalise the Portfolio'];
-const fb={
+initPage({
+  storageKey: 'csm-day28',
+  total: 4,
+  quizCount: 3,
+  checkTotal: 9,
+  titles: ['What You\'ve Actually Built','Telling the Story','What Comes Next','Hands-on: Finalise the Portfolio'],
+  fb: {
   0:{good:"Correct. Config and GuardDuty are fundamentally different detection mechanisms. Config is a posture scanner — it looks at the state of your resources and flags when something deviates from the desired configuration (a bucket that is currently public). GuardDuty is a behavioural detector — it analyses API calls and network traffic to identify active attacker behaviour right now (credentials being used from a Tor exit node, a Lambda making unusual DNS calls). You need both: one tells you your barn door is open; the other tells you someone is walking through it.",bad:"Not quite. Config and GuardDuty operate at completely different layers and cannot substitute for each other. Config detects resource misconfigurations — the state of your infrastructure. GuardDuty detects active attacker behaviour — what's happening in your account right now. A correctly configured S3 bucket (no Config finding) can still be accessed using stolen credentials (GuardDuty finding). Disabling either creates a blind spot that the other cannot cover."},
   1:{good:"Correct. This is the key distinction that makes JIT access valuable alongside MFA. MFA protects the moment of authentication — it makes it harder for an attacker to authenticate as you. But once authenticated, a session token is issued that may have standing admin permissions for hours. JIT access limits the blast radius of a compromised session: even if an attacker steals a session token, the associated role only has permissions for the next hour (or less), and only for the specific task it was granted for. MFA and JIT are complementary controls at different points in the identity lifecycle.",bad:"Not quite. MFA and JIT address different attack surfaces. MFA protects the authentication event — it prevents an attacker from logging in without physical access to your second factor. But MFA doesn't protect against session token theft (the attacker steals the token after authentication), or against a legitimate user whose credentials were compromised during an active session. JIT's 1-hour TTL role means any stolen session has a bounded window of damage. These are complementary controls, not redundant ones."},
   2:{good:"Correct. This is the power of defence in depth — not relying on any single control. The SCP (Week 1) prevents CreateUser even if all other controls fail. The IAM policy (Week 2) denies the action at the identity level. GuardDuty (Week 4) detects the privilege escalation attempt and fires a finding. The CloudWatch alarm (Week 4) pages the security team immediately. Security Hub (Week 4) surfaces the combined signal across all sources. An attacker attempting this attack is simultaneously prevented by governance controls, detected by behavioural ML, and alerted on by real-time monitoring — all independent layers.",bad:"Not quite. This attack scenario touches multiple layers simultaneously. The SCP prevents CreateUser at the organisation level — the call would be denied before the IAM policy even evaluates. GuardDuty detects the privilege escalation attempt and the unusual credential usage pattern. The CIS CloudWatch alarm fires immediately on the CreateUser API call. Security Hub surfaces all three findings in the unified dashboard. Access Analyzer monitors for external access on existing resources — it wouldn't flag a new user creation in real time. The correct answer demonstrates all four layers working together."}
-};
-let state=loadState();
-function loadState(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}return{current:0,done:[],correct:[],answered:[],checks:[]};}
-function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
-function goTo(n){document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));state.current=n;document.getElementById('pane-'+(n===TOTAL?'complete':n)).classList.add('active');const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('active');document.getElementById('topbar-title').textContent=titles[n]||'Complete';document.getElementById('btn-prev').disabled=(n===0);document.getElementById('btn-next').disabled=(n>=TOTAL-1);window.scrollTo(0,0);saveState();updateProgress();}
-function next(){if(state.current<TOTAL-1)goTo(state.current+1);}function prev(){if(state.current>0)goTo(state.current-1);}
-function finish(){markDone(state.current);document.querySelectorAll('.lesson-pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));const pct=Math.round(state.correct.length/3*100);document.getElementById('score-val').textContent=state.correct.length+' / 3 ('+pct+'%)';const checked=state.checks.filter(Boolean).length;document.getElementById('lab-score-val').textContent=checked;document.getElementById('pane-complete').classList.add('active');document.getElementById('btn-prev').disabled=true;document.getElementById('btn-next').disabled=true;saveState();}
-function markDone(n){if(!state.done.includes(n))state.done.push(n);const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');updateProgress();}
-function updateProgress(){const c=state.done.length;document.getElementById('progress-pct').textContent=c+' / '+TOTAL;document.getElementById('progress-fill').style.width=(c/TOTAL*100)+'%';}
-function check(btn,isCorrect,idx){if(state.answered.includes(idx))return;state.answered.push(idx);const opts=btn.closest('.kcheck-options').querySelectorAll('.kcheck-opt');opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(isCorrect){btn.classList.add('correct');fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;if(!state.correct.includes(idx))state.correct.push(idx);}else{btn.classList.add('wrong');fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});}markDone(idx);saveState();}
-function toggleCheck(el,idx){if(!state.checks[idx])state.checks[idx]=false;state.checks[idx]=!state.checks[idx];el.classList.toggle('checked',state.checks[idx]);updateChecklist();saveState();}
-function updateChecklist(){const total=9,checked=state.checks.filter(Boolean).length;document.getElementById('cl-fill').style.width=(checked/total*100)+'%';document.getElementById('cl-label').textContent=checked+' / '+total;if(checked===total&&!state.done.includes(3))markDone(3);}
-function copyCode(btn){const pre=btn.closest('.code-block').querySelector('pre');navigator.clipboard.writeText(pre.innerText).then(()=>{btn.textContent='copied!';setTimeout(()=>btn.textContent='copy',1500);});}
-function restoreState(){state.done.forEach(n=>{const items=document.querySelectorAll('.nav-item');if(items[n])items[n].classList.add('done');});state.answered.forEach(idx=>{const opts=document.querySelectorAll('#pane-'+idx+' .kcheck-opt');if(!opts.length)return;opts.forEach(o=>{o.classList.add('disabled');o.style.pointerEvents='none';});const fbEl=document.getElementById('fb-'+idx);if(state.correct.includes(idx)){const co=Array.from(opts).find(o=>o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'));if(co)co.classList.add('correct');if(fbEl){fbEl.className='kcheck-feedback show good';fbEl.textContent='✓ '+fb[idx].good;}}else{opts.forEach(o=>{if(o.getAttribute('onclick')&&o.getAttribute('onclick').includes('true'))o.classList.add('reveal-correct');});if(fbEl){fbEl.className='kcheck-feedback show bad';fbEl.textContent='✗ '+fb[idx].bad;}}});state.checks.forEach((v,i)=>{if(v){const items=document.querySelectorAll('.check-item');if(items[i])items[i].classList.add('checked');}});updateChecklist();updateProgress();goTo(state.current||0);}
-restoreState();
+}
+});
 </script>
 </body>
 </html>
